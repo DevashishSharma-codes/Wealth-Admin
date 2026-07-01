@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-zinc-50 text-zinc-900 antialiased selection:bg-blue-100 selection:text-blue-900;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .ww-page {
+    @apply space-y-6 font-sans;
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .ww-page-header {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+  }
+
+  .ww-page-title {
+    @apply text-2xl font-semibold text-zinc-900 tracking-tight;
+  }
+
+  .ww-page-subtitle {
+    @apply text-xs text-zinc-500;
+  }
+
+  .ww-glow-card {
+    @apply relative overflow-hidden rounded-xl border border-zinc-200 bg-gradient-to-t from-[#2B7FFF]/[0.06] via-white to-white shadow-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-md;
+  }
+
+  .ww-glow-card::before {
+    content: "";
+    @apply pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#8EC5FF]/25 blur-3xl transition-all duration-300;
+  }
+
+  .ww-glow-card::after {
+    content: "";
+    @apply pointer-events-none absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-[#2B7FFF]/5 blur-2xl;
+  }
+
+  .ww-glow-card:hover::before {
+    @apply scale-110 bg-[#2B7FFF]/25;
+  }
+
+  .ww-card-content {
+    @apply relative;
+  }
+
+  .ww-panel {
+    @apply bg-white border border-zinc-200 rounded-xl shadow-xs overflow-hidden;
+  }
+
+  .ww-panel-padded {
+    @apply bg-white border border-zinc-200 rounded-xl shadow-xs p-6;
+  }
+
+  .ww-control {
+    @apply bg-zinc-50 border border-zinc-200 rounded-md px-3 py-1.5 transition-colors focus-within:border-[#2B7FFF]/40;
+  }
+
+  .ww-input {
+    @apply bg-transparent border-none text-xs text-zinc-700 outline-none w-full placeholder-zinc-400;
+  }
+
+  .ww-primary-btn {
+    @apply px-4 py-2 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 rounded-md text-white text-xs font-medium cursor-pointer transition-colors shadow-xs disabled:bg-[#2B7FFF]/50 disabled:cursor-not-allowed;
+  }
+
+  .ww-secondary-btn {
+    @apply px-4 py-2 border border-zinc-200 rounded-md bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 cursor-pointer transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .ww-section-label {
+    @apply text-xs font-semibold text-zinc-900;
+  }
+
+  .ww-table {
+    @apply w-full text-left text-xs border-collapse;
+  }
+
+  .ww-table-head {
+    @apply border-b border-zinc-100 text-zinc-400 font-medium bg-zinc-50/50;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar for sleek modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
