@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Search, User, ShieldCheck } from "lucide-react";
+import { Bell, Search, User, ShieldCheck, Menu } from "lucide-react";
 import { getAdminUsers, getAdminLeads, getAdminAssessments } from "../../services/assessmentService";
 
 const parseUtcDate = (dateStr) => {
@@ -12,7 +12,7 @@ const parseUtcDate = (dateStr) => {
   return new Date(s);
 };
 
-export default function Navbar({ activeTab, globalSearch, setGlobalSearch }) {
+export default function Navbar({ activeTab, globalSearch, setGlobalSearch, isMobileOpen, setIsMobileOpen }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -122,12 +122,24 @@ export default function Navbar({ activeTab, globalSearch, setGlobalSearch }) {
   const unreadCount = notifications.length;
 
   return (
-    <header className="h-16 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 shrink-0">
+    <header className="h-16 bg-white border-b border-zinc-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 shrink-0">
       {/* Title / Active Tab indicator */}
-      <div>
-        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-          Wealth Wisdom Platform
-        </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="lg:hidden p-1.5 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 transition-colors cursor-pointer"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div>
+          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+            Wealth Wisdom Platform
+          </p>
+          <h1 className="text-xs font-bold text-zinc-700 md:hidden -mt-0.5">
+            {getPageTitle()}
+          </h1>
+        </div>
       </div>
 
       {/* Center Search bar */}
@@ -157,7 +169,7 @@ export default function Navbar({ activeTab, globalSearch, setGlobalSearch }) {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-zinc-200 shadow-xl py-2 z-50 animate-fade-in">
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-zinc-200 shadow-xl py-2 z-50 animate-fade-in">
               <div className="px-4 py-2 border-b border-zinc-100 flex items-center justify-between">
                 <span className="text-xs font-semibold text-zinc-800">Notifications</span>
                 {unreadCount > 0 && (

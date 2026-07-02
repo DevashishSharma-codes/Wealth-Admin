@@ -9,12 +9,12 @@ export const API_BASE_URL =
 export const ADMIN_API_KEY =
   localStorage.getItem("WW_ADMIN_API_KEY") ||
   import.meta.env.VITE_ADMIN_API_KEY ||
-  "0b6b01cae2961512b5bb989d800a082e7e2b6013c7d48830d899eebca96414de";
+  "";
 
 export const API_KEY =
   localStorage.getItem("WW_API_KEY") ||
   import.meta.env.VITE_API_KEY ||
-  "e2d0098d7ad7aaa3efd03548db794b2b9a7cc2d66b25d554f1a53e11c3ac27b1";
+  "";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
