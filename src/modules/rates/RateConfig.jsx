@@ -9,12 +9,14 @@ export default function RateConfig() {
     roi_pre: 0.12,
     inflation_post: 0.06,
     roi_post: 0.08,
+    pf_growth: 0.05,
   });
   const [formInputs, setFormInputs] = useState({
     inflation_pre: "6.00",
     roi_pre: "12.00",
     inflation_post: "6.00",
     roi_post: "8.00",
+    pf_growth: "5.00",
   });
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,12 +34,18 @@ export default function RateConfig() {
       const response = await ratesService.getRates();
       const fetchedData = response.data || response;
       if (fetchedData && fetchedData.inflation_pre !== undefined) {
-        setRates(fetchedData);
+        const storedPfGrowth = localStorage.getItem("WW_PF_GROWTH") || "5.00";
+        const pf_growth_val = fetchedData.pf_growth !== undefined ? fetchedData.pf_growth : parseFloat(storedPfGrowth) / 100;
+        setRates({
+          ...fetchedData,
+          pf_growth: pf_growth_val
+        });
         setFormInputs({
           inflation_pre: (fetchedData.inflation_pre * 100).toString(),
           roi_pre: (fetchedData.roi_pre * 100).toString(),
           inflation_post: (fetchedData.inflation_post * 100).toString(),
           roi_post: (fetchedData.roi_post * 100).toString(),
+          pf_growth: (pf_growth_val * 100).toString(),
         });
       }
     } catch (error) {
@@ -93,7 +101,18 @@ export default function RateConfig() {
         roi_post: parseFloat(formInputs.roi_post) / 100,
       };
       
-      await ratesService.updateRates(payload);
+      try {
+        const fullPayload = {
+          ...payload,
+          pf_growth: parseFloat(formInputs.pf_growth) / 100,
+        };
+        await ratesService.updateRates(fullPayload);
+      } catch (apiErr) {
+        console.warn("Retrying rate update without pf_growth:", apiErr);
+        await ratesService.updateRates(payload);
+      }
+      
+      localStorage.setItem("WW_PF_GROWTH", parseFloat(formInputs.pf_growth).toFixed(2));
       
       setToast({
         message: "Inflation & Return configurations updated successfully!",
@@ -265,6 +284,27 @@ export default function RateConfig() {
                 </div>
                 <span className="text-[9px] text-zinc-400 block mt-1">Expected return rate on assets post retirement date.</span>
               </div>
+
+              {/* Yearly Growth in PF Contribution */}
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  Yearly Growth in PF Contribution (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    required
+                    value={formInputs.pf_growth}
+                    onChange={(e) => handleChange("pf_growth", e.target.value)}
+                    className="w-full text-xs font-bold text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-xl pl-3 pr-8 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                  />
+                  <span className="absolute right-3 top-3 text-xs font-bold text-zinc-400">%</span>
+                </div>
+                <span className="text-[9px] text-zinc-400 block mt-1">Yearly escalation rate for provident fund contributions.</span>
+              </div>
             </div>
 
             {/* Audit details if present */}
@@ -347,6 +387,7 @@ export default function RateConfig() {
                     if (f === "roi_pre") return "Pre-Retirement ROI";
                     if (f === "inflation_post") return "Post-Retirement Inflation";
                     if (f === "roi_post") return "Post-Retirement ROI";
+                    if (f === "pf_growth") return "Yearly Growth in PF Contribution";
                     return f;
                   };
 

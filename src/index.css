@@ -132,3 +132,25 @@
 .animate-slide-in {
   animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Rich-text Editor Placeholder */
+.ww-richtext-editor:empty:before {
+  content: attr(placeholder);
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+/* Rich-text Editor Formatting Overrides */
+.ww-richtext-editor b,
+.ww-richtext-editor strong,
+.ww-richtext-preview b,
+.ww-richtext-preview strong {
+  font-weight: 800 !important;
+}
+
+.ww-richtext-editor i,
+.ww-richtext-editor em,
+.ww-richtext-preview i,
+.ww-richtext-preview em {
+  font-style: italic !important;
+}

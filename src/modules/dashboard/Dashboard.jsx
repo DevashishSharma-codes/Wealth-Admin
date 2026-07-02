@@ -92,10 +92,21 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
+const getStageName = (lead) => {
+  if (lead.report_id || lead.report_generated) return "Stage-5 (retirementsaving)";
+  if (lead.flow4_submitted_at) return "Stage-4 (lifestyle goals)";
+  if (lead.flow3_submitted_at) return "Stage-3 (familydetails)";
+  if (lead.flow2_submitted_at) return "Stage-2 (personaldetails)";
+  if (lead.flow1_submitted_at) return "Stage-1 (communication)";
+  return "Stage-1 (communication)";
+};
+
 export default function Dashboard() {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userGrowthRange, setUserGrowthRange] = useState("12");
+  const [showAllCritical, setShowAllCritical] = useState(false);
+  const [criticalPage, setCriticalPage] = useState(1);
 
   const [dashboardData, setDashboardData] = useState({
     totalUsers: 0,
@@ -248,10 +259,10 @@ export default function Dashboard() {
       }));
 
       const criticalRaw = leadsList.filter(l => !l.report_id && !l.report_generated);
-      const critical = (criticalRaw.length > 0 ? criticalRaw : leadsList).slice(0, 3).map((l, idx) => ({
+      const critical = (criticalRaw.length > 0 ? criticalRaw : leadsList).map((l, idx) => ({
         id: l.assessment_id || `lead-${idx}`,
         user: l.name || "Anonymous Lead",
-        type: l.flow4_submitted_at ? "Comprehensive Plan" : "Intake Request",
+        type: getStageName(l),
         potential: l.flow4_submitted_at ? "₹1.5 - ₹3.0 Cr" : "₹50 - ₹80 L",
         status: l.flow4_submitted_at ? "HIGH PRIORITY" : "REVIEWING"
       }));
@@ -292,9 +303,7 @@ export default function Dashboard() {
     { id: "users", label: "Total Unique Users", value: dashboardData.totalUsers.toLocaleString(), change: dashboardData.usersChange.change, changeType: dashboardData.usersChange.changeType, description: "vs last month", icon: "Users" },
     { id: "leads", label: "Total Leads", value: dashboardData.totalLeads.toLocaleString(), change: dashboardData.leadsChange.change, changeType: dashboardData.leadsChange.changeType, description: "vs last month", icon: "TrendingUp" },
     { id: "completed", label: "Completed Assessments", value: dashboardData.completedAssessments.toLocaleString(), change: dashboardData.completedChange.change, changeType: dashboardData.completedChange.changeType, description: "vs last week", icon: "CheckCircle" },
-    { id: "reports", label: "Reports Generated", value: dashboardData.reportsGenerated.toLocaleString(), change: dashboardData.reportsChange.change, changeType: dashboardData.reportsChange.changeType, description: "vs last month", icon: "FileText" },
-    { id: "sip", label: "Avg SIP", value: dashboardData.avgSip, change: "Steady", changeType: "neutral", description: "vs last quarter", icon: "Wallet" },
-    { id: "insurance", label: "Insurance Req.", value: dashboardData.avgInsurance, change: "Steady", changeType: "neutral", description: "No change", icon: "Shield" }
+    { id: "reports", label: "Reports Generated", value: dashboardData.reportsGenerated.toLocaleString(), change: dashboardData.reportsChange.change, changeType: dashboardData.reportsChange.changeType, description: "vs last month", icon: "FileText" }
   ];
 
   const lineSvgWidth = 640;
@@ -392,7 +401,7 @@ export default function Dashboard() {
       </div>
 
       {/* ===================== KPI CARDS — shadcn "morphed gradient" style ===================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => {
           const TrendIcon =
             kpi.changeType === "up" ? icons.TrendingUp :
@@ -609,9 +618,17 @@ export default function Dashboard() {
               <h3 className="text-sm font-semibold text-zinc-900">Critical Leads Requiring Action</h3>
               <p className="text-[11px] text-zinc-400">Identified leads needing immediate advisor follow-ups.</p>
             </div>
-            <button className="text-[11px] text-[#2B7FFF] hover:text-[#2B7FFF]/80 font-medium cursor-pointer">
-              View All
-            </button>
+            {dashboardData.criticalLeads.length > 3 && (
+              <button
+                onClick={() => {
+                  setShowAllCritical(!showAllCritical);
+                  setCriticalPage(1);
+                }}
+                className="text-[11px] text-[#2B7FFF] hover:text-[#2B7FFF]/80 font-medium cursor-pointer"
+              >
+                {showAllCritical ? "Show Less" : "View All"}
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -625,24 +642,56 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50">
-                {dashboardData.criticalLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-zinc-50/50 transition-colors">
-                    <td className="py-3 px-3 font-medium text-zinc-900">{lead.user}</td>
-                    <td className="py-3 px-3 text-zinc-500">{lead.type}</td>
-                    <td className="py-3 px-3 font-semibold text-zinc-700">{lead.potential}</td>
-                    <td className="py-3 px-3 text-right">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold border ${lead.status === "HIGH PRIORITY"
-                        ? "bg-red-50 text-red-700 border-red-200"
-                        : "bg-amber-50 text-amber-700 border-amber-200"
-                        }`}>
-                        {lead.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const itemsPerPage = 10;
+                  const displayedLeads = showAllCritical
+                    ? dashboardData.criticalLeads.slice((criticalPage - 1) * itemsPerPage, criticalPage * itemsPerPage)
+                    : dashboardData.criticalLeads.slice(0, 3);
+                  return displayedLeads.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-zinc-50/50 transition-colors">
+                      <td className="py-3 px-3 font-medium text-zinc-900">{lead.user}</td>
+                      <td className="py-3 px-3 text-zinc-500">{lead.type}</td>
+                      <td className="py-3 px-3 font-semibold text-zinc-700">{lead.potential}</td>
+                      <td className="py-3 px-3 text-right">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold border ${lead.status === "HIGH PRIORITY"
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}>
+                          {lead.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
+
+          {showAllCritical && dashboardData.criticalLeads.length > 10 && (
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-150">
+              <div className="text-[11px] text-zinc-400 font-medium">
+                Showing {(criticalPage - 1) * 10 + 1} to {Math.min(criticalPage * 10, dashboardData.criticalLeads.length)} of {dashboardData.criticalLeads.length} critical leads
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCriticalPage((p) => Math.max(1, p - 1))}
+                  disabled={criticalPage === 1}
+                  className="px-2.5 py-1 border border-zinc-200 rounded-lg text-[10px] font-bold text-zinc-650 bg-white hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCriticalPage((p) => Math.min(Math.ceil(dashboardData.criticalLeads.length / 10), p + 1))}
+                  disabled={criticalPage === Math.ceil(dashboardData.criticalLeads.length / 10)}
+                  className="px-2.5 py-1 border border-zinc-200 rounded-lg text-[10px] font-bold text-zinc-650 bg-white hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Platform Health Status */}
