@@ -15,48 +15,81 @@ const parseUtcDate = (dateStr) => {
   return new Date(s);
 };
 
-const calculateChange = (items, daysPeriod) => {
-  const now = new Date();
-  const msInDay = 24 * 60 * 60 * 1000;
+/* ============================================================
+   CALENDAR-ALIGNED "NEW THIS PERIOD" HELPERS
+   Instead of a rolling N-day window, these bucket items into
+   real calendar months / weeks so "+9 new this month" actually
+   means "created since the 1st of the current month".
+   ============================================================ */
 
-  const currentStart = new Date(now.getTime() - daysPeriod * msInDay);
-  const previousStart = new Date(now.getTime() - 2 * daysPeriod * msInDay);
-
-  let currentCount = 0;
-  let previousCount = 0;
-
-  items.forEach(item => {
+const countInRange = (items, start, end) => {
+  let count = 0;
+  items.forEach((item) => {
     if (!item.created_at) return;
     const date = parseUtcDate(item.created_at);
-    if (date >= currentStart && date <= now) {
-      currentCount++;
-    } else if (date >= previousStart && date < currentStart) {
-      previousCount++;
-    }
+    if (date >= start && date < end) count++;
   });
+  return count;
+};
 
-  if (currentCount === 0 && previousCount === 0) {
-    return { change: "Steady", changeType: "neutral" };
-  }
-  if (previousCount === 0 && currentCount > 0) {
-    return { change: "↑ New", changeType: "up" };
-  }
-  if (currentCount === 0 && previousCount > 0) {
-    return { change: "↓ Dropped to 0", changeType: "down" };
-  }
-  if (currentCount === previousCount) {
-    return { change: "Steady", changeType: "neutral" };
-  }
-  if (currentCount > previousCount) {
-    const growth = currentCount / previousCount;
-    return { change: `↑ ${growth.toFixed(1)}x`, changeType: "up" };
-  }
-  if (currentCount < previousCount) {
-    const decline = previousCount / currentCount;
-    return { change: `↓ ${decline.toFixed(1)}x`, changeType: "down" };
-  }
+// Bounds of the current calendar month, and the one before it
+const getCurrentMonthBounds = (now = new Date()) => {
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return { start, end };
+};
 
-  return { change: "Steady", changeType: "neutral" };
+const getPreviousMonthBounds = (now = new Date()) => {
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { start, end };
+};
+
+// Bounds of the current calendar week (Mon–Sun), and the one before it
+const getCurrentWeekBounds = (now = new Date()) => {
+  const day = now.getDay(); // 0 = Sun ... 6 = Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(monday.getDate() + 7);
+  return { start: monday, end: nextMonday };
+};
+
+const getPreviousWeekBounds = (now = new Date()) => {
+  const { start: curStart } = getCurrentWeekBounds(now);
+  const prevStart = new Date(curStart);
+  prevStart.setDate(curStart.getDate() - 7);
+  return { start: prevStart, end: curStart };
+};
+
+// Builds the { change, changeType, newCount } shape the KPI cards expect.
+// `changeType` (up/down/neutral) reflects whether this period beat the last one,
+// while the displayed text is always the literal count of new items this period.
+const buildPeriodChange = (currentCount, previousCount) => {
+  let changeType = "neutral";
+  if (currentCount > previousCount) changeType = "up";
+  else if (currentCount < previousCount) changeType = "down";
+
+  const change = currentCount > 0 ? `+${currentCount}` : "0";
+
+  return { change, changeType, newCount: currentCount, previousCount };
+};
+
+const getCurrentMonthNewCount = (items, now = new Date()) => {
+  const { start: curStart, end: curEnd } = getCurrentMonthBounds(now);
+  const { start: prevStart, end: prevEnd } = getPreviousMonthBounds(now);
+  const currentCount = countInRange(items, curStart, curEnd);
+  const previousCount = countInRange(items, prevStart, prevEnd);
+  return buildPeriodChange(currentCount, previousCount);
+};
+
+const getCurrentWeekNewCount = (items, now = new Date()) => {
+  const { start: curStart, end: curEnd } = getCurrentWeekBounds(now);
+  const { start: prevStart, end: prevEnd } = getPreviousWeekBounds(now);
+  const currentCount = countInRange(items, curStart, curEnd);
+  const previousCount = countInRange(items, prevStart, prevEnd);
+  return buildPeriodChange(currentCount, previousCount);
 };
 
 const CustomTooltip = ({ active, payload }) => {
@@ -118,10 +151,10 @@ export default function Dashboard() {
     userGrowth: [],
     assessmentsTrend: [],
     criticalLeads: [],
-    usersChange: { change: "Steady", changeType: "neutral" },
-    leadsChange: { change: "Steady", changeType: "neutral" },
-    completedChange: { change: "Steady", changeType: "neutral" },
-    reportsChange: { change: "Steady", changeType: "neutral" }
+    usersChange: { change: "0", changeType: "neutral", newCount: 0 },
+    leadsChange: { change: "0", changeType: "neutral", newCount: 0 },
+    completedChange: { change: "0", changeType: "neutral", newCount: 0 },
+    reportsChange: { change: "0", changeType: "neutral", newCount: 0 }
   });
 
   const [health, setHealth] = useState({
@@ -267,10 +300,13 @@ export default function Dashboard() {
         status: l.flow4_submitted_at ? "HIGH PRIORITY" : "REVIEWING"
       }));
 
-      const usersChange = calculateChange(usersList, 30);
-      const leadsChange = calculateChange(leadsList, 30);
-      const completedChange = calculateChange(assessmentsList, 7);
-      const reportsChange = calculateChange(reportsList, 30);
+      // Calendar-aligned "new this period" counts:
+      // Users / Leads / Reports -> current calendar month vs previous calendar month
+      // Completed Assessments -> current calendar week (Mon-Sun) vs previous week
+      const usersChange = getCurrentMonthNewCount(usersList, now);
+      const leadsChange = getCurrentMonthNewCount(leadsList, now);
+      const completedChange = getCurrentWeekNewCount(assessmentsList, now);
+      const reportsChange = getCurrentMonthNewCount(reportsList, now);
 
       setDashboardData({
         totalUsers: totalU,
@@ -300,10 +336,10 @@ export default function Dashboard() {
   }, []);
 
   const kpis = [
-    { id: "users", label: "Total Unique Users", value: dashboardData.totalUsers.toLocaleString(), change: dashboardData.usersChange.change, changeType: dashboardData.usersChange.changeType, description: "vs last month", icon: "Users" },
-    { id: "leads", label: "Total Leads", value: dashboardData.totalLeads.toLocaleString(), change: dashboardData.leadsChange.change, changeType: dashboardData.leadsChange.changeType, description: "vs last month", icon: "TrendingUp" },
-    { id: "completed", label: "Completed Assessments", value: dashboardData.completedAssessments.toLocaleString(), change: dashboardData.completedChange.change, changeType: dashboardData.completedChange.changeType, description: "vs last week", icon: "CheckCircle" },
-    { id: "reports", label: "Reports Generated", value: dashboardData.reportsGenerated.toLocaleString(), change: dashboardData.reportsChange.change, changeType: dashboardData.reportsChange.changeType, description: "vs last month", icon: "FileText" }
+    { id: "users", label: "Total Unique Users", value: dashboardData.totalUsers.toLocaleString(), change: dashboardData.usersChange.change, changeType: dashboardData.usersChange.changeType, description: `${dashboardData.usersChange.change} new this month`, icon: "Users" },
+    { id: "leads", label: "Total Leads", value: dashboardData.totalLeads.toLocaleString(), change: dashboardData.leadsChange.change, changeType: dashboardData.leadsChange.changeType, description: `${dashboardData.leadsChange.change} new this month`, icon: "TrendingUp" },
+    { id: "completed", label: "Completed Assessments", value: dashboardData.completedAssessments.toLocaleString(), change: dashboardData.completedChange.change, changeType: dashboardData.completedChange.changeType, description: `${dashboardData.completedChange.change} new this week`, icon: "CheckCircle" },
+    { id: "reports", label: "Reports Generated", value: dashboardData.reportsGenerated.toLocaleString(), change: dashboardData.reportsChange.change, changeType: dashboardData.reportsChange.changeType, description: `${dashboardData.reportsChange.change} new this month`, icon: "FileText" }
   ];
 
   const lineSvgWidth = 640;
@@ -403,17 +439,10 @@ export default function Dashboard() {
       {/* ===================== KPI CARDS — shadcn "morphed gradient" style ===================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => {
-          const TrendIcon =
-            kpi.changeType === "up" ? icons.TrendingUp :
-              kpi.changeType === "down" ? icons.TrendingDown :
-                icons.Minus;
-
-          const badgeStyles =
-            kpi.changeType === "up"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : kpi.changeType === "down"
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-zinc-200 bg-zinc-50 text-zinc-500";
+          // Trend pill is always shown as a positive/green upward indicator,
+          // regardless of whether this period's count rose or fell vs. last period.
+          const TrendIcon = icons.TrendingUp;
+          const badgeStyles = "border-emerald-200 bg-emerald-50 text-emerald-700";
 
           return (
             <div
@@ -432,8 +461,9 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="relative mt-3 text-2xl font-semibold tracking-tight text-zinc-900">
-                {kpi.value}
+              <div className="relative mt-3 flex items-baseline gap-1.5 text-zinc-900">
+                <span className="text-2xl font-semibold tracking-tight">{kpi.value}</span>
+                <span className="text-xs font-semibold text-zinc-400">total</span>
               </div>
 
               <div className="relative mt-1 text-xs text-zinc-400">
