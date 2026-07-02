@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Search, User, ShieldCheck, Menu } from "lucide-react";
+import { Bell, Search, User, Menu } from "lucide-react";
 import { getAdminUsers, getAdminLeads, getAdminAssessments } from "../../services/assessmentService";
 
 const parseUtcDate = (dateStr) => {
@@ -213,14 +213,6 @@ export default function Navbar({ activeTab, globalSearch, setGlobalSearch, isMob
         <div className="flex items-center gap-2 border-l border-zinc-200 pl-4">
           <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200 shrink-0 select-none">
             <User className="w-4 h-4 text-zinc-500" />
-          </div>
-          <div className="hidden lg:block text-left">
-            <span className="block text-xs font-semibold text-zinc-700 leading-none">
-              Super Admin
-            </span>
-            <span className="text-[9px] text-zinc-400 block mt-0.5 font-medium flex items-center gap-0.5">
-              <ShieldCheck className="w-2.5 h-2.5 text-[#2B7FFF]" /> Verified Access
-            </span>
           </div>
         </div>
       </div>
