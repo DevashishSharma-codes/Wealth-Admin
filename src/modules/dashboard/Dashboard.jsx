@@ -389,14 +389,6 @@ export default function Dashboard() {
           <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">Executive Dashboard</h2>
           <p className="text-xs text-zinc-500">Consolidated performance metrics for Wealth Wisdom platform.</p>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 border border-zinc-200 rounded-md bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 cursor-pointer transition-colors shadow-xs">
-            Export Data
-          </button>
-          <button className="px-4 py-2 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 rounded-md text-white text-xs font-medium cursor-pointer transition-colors shadow-xs">
-            Generate Insights
-          </button>
-        </div>
       </div>
 
       {/* ===================== KPI CARDS — shadcn "morphed gradient" style ===================== */}
