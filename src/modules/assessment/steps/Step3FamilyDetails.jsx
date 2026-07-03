@@ -72,7 +72,7 @@ export default function Step3FamilyDetails() {
                       value={child.name}
                       onChange={(e) => handleChildInputChange(idx, "name", e.target.value)}
                       placeholder="Enter child full name"
-                      required={true}
+                      required={false}
                     />
                     <FormField
                       label="Occupation"
@@ -80,7 +80,7 @@ export default function Step3FamilyDetails() {
                       value={child.occupation}
                       onChange={(e) => handleChildInputChange(idx, "occupation", e.target.value)}
                       placeholder="e.g. Student"
-                      required={true}
+                      required={false}
                     />
                   </div>
 
@@ -90,11 +90,11 @@ export default function Step3FamilyDetails() {
                       name={`child-dob-${idx}`}
                       value={child.dob}
                       onChange={(e) => handleChildInputChange(idx, "dob", e.target.value)}
-                      required={true}
+                      required={false}
                     />
                     <div>
                       <label className="block text-xs font-bold text-zinc-600 tracking-wide select-none mb-1">
-                        Financially Dependent? *
+                        Financially Dependent?
                       </label>
                       <select
                         value={child.dependent || "Yes"}
@@ -118,11 +118,11 @@ export default function Step3FamilyDetails() {
                   {/* Goal mappings */}
                   <div className="pt-2 space-y-3">
                     <span className="font-bold text-zinc-500 flex items-center gap-1.5 border-t border-zinc-200 pt-3">
-                      <Target className="w-3.5 h-3.5 text-[#2B7FFF]" /> Child Goal Plan (Required)
+                      <Target className="w-3.5 h-3.5 text-[#2B7FFF]" /> Child Goal Plan (Optional)
                     </span>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-[11px] font-bold text-zinc-500 mb-1">GOAL TYPE *</label>
+                        <label className="block text-[11px] font-bold text-zinc-500 mb-1">GOAL TYPE</label>
                         <select
                           value={child.goalType || ""}
                           onChange={(e) => handleChildInputChange(idx, "goalType", e.target.value)}
@@ -137,22 +137,22 @@ export default function Step3FamilyDetails() {
                         </select>
                       </div>
                       <FormField
-                        label="Target Year (YYYY) *"
+                        label="Target Year (YYYY)"
                         name={`child-year-${idx}`}
                         value={child.targetYear}
                         onChange={(e) => handleChildInputChange(idx, "targetYear", e.target.value)}
                         placeholder="e.g. 2035"
                         type="number"
-                        required={true}
+                        required={false}
                       />
                       <FormField
-                        label="Today's Cost (INR) *"
+                        label="Today's Cost (INR)"
                         name={`child-cost-${idx}`}
                         value={child.todaysCost}
                         onChange={(e) => handleChildInputChange(idx, "todaysCost", e.target.value)}
                         placeholder="e.g. 1500000"
                         type="number"
-                        required={true}
+                        required={false}
                       />
                     </div>
                   </div>

@@ -84,11 +84,10 @@ export default function AssessmentBuilder() {
               <button
                 key={item.n}
                 onClick={() => goToStep(item.n)}
-                disabled={item.n > step && !calculationResult}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold shrink-0 transition-colors cursor-pointer ${
                   step === item.n
                     ? "bg-[#2B7FFF] text-white shadow-xs"
-                    : "bg-zinc-50 text-zinc-400 hover:text-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    : "bg-zinc-50 text-zinc-400 hover:text-zinc-600"
                 }`}
               >
                 {item.n}. {item.name}

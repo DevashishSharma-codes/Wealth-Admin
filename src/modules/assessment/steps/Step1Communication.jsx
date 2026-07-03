@@ -46,7 +46,7 @@ export default function Step1Communication() {
               value={formData.mobile}
               onChange={handleInputChange}
               placeholder="Enter mobile number"
-              required={true}
+              required={false}
             />
             <FormField
               label="Email Address"
@@ -55,7 +55,7 @@ export default function Step1Communication() {
               onChange={handleInputChange}
               placeholder="Enter email address"
               type="email"
-              required={true}
+              required={false}
             />
           </div>
 
@@ -65,7 +65,7 @@ export default function Step1Communication() {
             value={formData.address}
             onChange={handleInputChange}
             placeholder="Enter residential address"
-            required={true}
+            required={false}
           />
         </div>
 
@@ -107,7 +107,7 @@ export default function Step1Communication() {
               className="mt-0.5"
             />
             <span className="text-[10px] font-bold text-zinc-400 leading-normal">
-              I consent to share the communication details and allow contact to save this assessment. *
+              I consent to share the communication details and allow contact to save this assessment. (Optional)
             </span>
           </label>
         </div>

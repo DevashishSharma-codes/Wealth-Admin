@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Search, Filter, X, Eye, Calendar, Award, CheckCircle, HelpCircle, Briefcase, Heart, User, MapPin, Download, Loader2 } from "lucide-react";
+import { Search, Filter, X, Eye, Calendar, Award, CheckCircle, HelpCircle, Briefcase, Heart, User, MapPin, Download, Loader2, FileSpreadsheet } from "lucide-react";
 import { getAdminUsers, getAdminLeads, getAdminAssessments } from "../../services/assessmentService";
 import { downloadAdminReport } from "../../services/reportService";
 
@@ -141,6 +141,8 @@ export default function UsersList() {
       setDownloadingReportId(null);
     }
   };
+
+
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -318,7 +320,14 @@ export default function UsersList() {
                         >
                           <Eye className="w-3.5 h-3.5" /> View Details
                         </button>
-                        {user.reportId && (
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                          title="View Excel Report"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                        </button>
+                        {user.reportId ? (
                           <button
                             onClick={() => downloadReportFile(user.reportId, user.id)}
                             disabled={downloadingReportId === user.reportId}
@@ -332,6 +341,11 @@ export default function UsersList() {
                             )}
                             PDF
                           </button>
+                        ) : (
+                          <div className="px-2.5 py-1 border border-transparent text-[10px] font-bold inline-flex items-center gap-1.5 select-none invisible">
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
+                          </div>
                         )}
                       </div>
                     </td>
@@ -468,6 +482,13 @@ export default function UsersList() {
                   }`}>
                     {selectedUser.status}
                   </span>
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
+                    title="Export to Excel"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                  </button>
                   {selectedUser.reportId && (
                     <button
                       type="button"

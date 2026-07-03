@@ -47,7 +47,7 @@ export default function Step2PersonalDetails() {
             value={formData.name}
             onChange={handleInputChange}
             placeholder="Enter your full name"
-            required={true}
+            required={false}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -57,7 +57,7 @@ export default function Step2PersonalDetails() {
               value={formData.occupation}
               onChange={handleInputChange}
               placeholder="Enter occupation sector"
-              required={true}
+              required={false}
             />
             <FormField
               label="Your Designation"
@@ -65,7 +65,7 @@ export default function Step2PersonalDetails() {
               value={formData.designation}
               onChange={handleInputChange}
               placeholder="Enter designation title"
-              required={true}
+              required={false}
             />
           </div>
 
@@ -76,14 +76,14 @@ export default function Step2PersonalDetails() {
               value={formData.companyName}
               onChange={handleInputChange}
               placeholder="Enter company name"
-              required={true}
+              required={false}
             />
             <DatePicker
               label="Your Date Of Birth"
               name="dob"
               value={formData.dob}
               onChange={handleInputChange}
-              required={true}
+              required={false}
             />
           </div>
 
@@ -95,7 +95,7 @@ export default function Step2PersonalDetails() {
               onChange={handleInputChange}
               placeholder="Enter monthly expense value (INR)"
               type="number"
-              required={true}
+              required={false}
             />
           </div>
         </div>

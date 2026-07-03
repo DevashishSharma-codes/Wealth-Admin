@@ -177,26 +177,30 @@ export default function AssessmentProvider({ children }) {
     }
   };
 
+  const ensureAssessmentId = async () => {
+    let currentId = assessmentId;
+    if (!currentId) {
+      try {
+        const createRes = await assessmentService.createAssessment();
+        currentId = createRes.data?.assessment_id || createRes.assessment_id;
+        setAssessmentId(currentId);
+      } catch (e) {
+        console.error("createAssessment failed:", e);
+        throw new Error("Failed to initialize assessment on the server. Please check connection.");
+      }
+    }
+    return currentId;
+  };
+
   const submitStep1 = async () => {
     setApiError(null);
     setIsSubmitting(true);
     try {
-      let currentId = assessmentId;
-      if (!currentId) {
-        // Ping rates config to verify API working
-        try {
-          await assessmentService.createAssessment();
-        } catch (e) {
-          // If error occurs, create a temp assessment
-        }
-        const createRes = await assessmentService.createAssessment();
-        currentId = createRes.data?.assessment_id || createRes.assessment_id;
-        setAssessmentId(currentId);
-      }
+      const currentId = await ensureAssessmentId();
       const payload = {
-        mobile: formData.mobile,
-        email: formData.email,
-        consent: formData.consent,
+        mobile: formData.mobile || "",
+        email: formData.email || "",
+        consent: !!formData.consent,
       };
       if (formData.spouseMobile && formData.spouseMobile.trim()) {
         payload.spouse_mobile = formData.spouseMobile;
@@ -221,12 +225,13 @@ export default function AssessmentProvider({ children }) {
     setApiError(null);
     setIsSubmitting(true);
     try {
+      const currentId = await ensureAssessmentId();
       const payload = {
-        client_name: formData.name,
-        client_occupation: formData.occupation,
-        client_designation: formData.designation,
-        client_company: formData.companyName,
-        client_dob: formData.dob,
+        client_name: formData.name || "",
+        client_occupation: formData.occupation || "",
+        client_designation: formData.designation || "",
+        client_company: formData.companyName || "",
+        client_dob: formData.dob || "",
         client_retirement_age: parseInt(formData.targetRetireAge) || 60,
         spouse_retirement_age: 55,
       };
@@ -245,7 +250,7 @@ export default function AssessmentProvider({ children }) {
       if (formData.spouseDob && formData.spouseDob.trim()) {
         payload.spouse_dob = formData.spouseDob;
       }
-      await assessmentService.submitFlow2(assessmentId, payload);
+      await assessmentService.submitFlow2(currentId, payload);
       nextStep();
     } catch (err) {
       console.error(err);
@@ -259,10 +264,11 @@ export default function AssessmentProvider({ children }) {
     setApiError(null);
     setIsSubmitting(true);
     try {
+      const currentId = await ensureAssessmentId();
       const activeChildren = childrenData.slice(0, childrenCount).map((c, idx) => {
         const childObj = {
           child_number: idx + 1,
-          full_name: c.name,
+          full_name: c.name || "",
           financially_dependent: c.dependent === "Yes",
         };
         if (c.occupation && c.occupation.trim()) {
@@ -273,7 +279,7 @@ export default function AssessmentProvider({ children }) {
         }
         return childObj;
       });
-      const res = await assessmentService.submitFlow3(assessmentId, {
+      const res = await assessmentService.submitFlow3(currentId, {
         number_of_children: childrenCount,
         children: activeChildren,
       });
@@ -305,6 +311,7 @@ export default function AssessmentProvider({ children }) {
     setApiError(null);
     setIsSubmitting(true);
     try {
+      const currentId = await ensureAssessmentId();
       const apiGoals = [];
 
       // Child education goals
@@ -319,8 +326,8 @@ export default function AssessmentProvider({ children }) {
           const goalObj = {
             category: "child_goal",
             goal_type: mappedType,
-            target_year: parseInt(c.targetYear),
-            today_cost: parseFloat(c.todaysCost),
+            target_year: parseInt(c.targetYear) || 2035,
+            today_cost: parseFloat(c.todaysCost) || 0,
             inflation_rate: 0.06,
           };
           if (c.id) {
@@ -342,8 +349,8 @@ export default function AssessmentProvider({ children }) {
           apiGoals.push({
             category: "lifestyle",
             goal_type: mappedType,
-            target_year: parseInt(g.targetYear),
-            today_cost: parseFloat(g.todaysCost),
+            target_year: parseInt(g.targetYear) || 2035,
+            today_cost: parseFloat(g.todaysCost) || 0,
             inflation_rate: 0.06,
           });
         }
@@ -351,7 +358,7 @@ export default function AssessmentProvider({ children }) {
 
       // Submit goals if any exist
       if (apiGoals.length > 0) {
-        await assessmentService.submitFlow4(assessmentId, {
+        await assessmentService.submitFlow4(currentId, {
           goals: apiGoals,
         });
       }
@@ -384,13 +391,14 @@ export default function AssessmentProvider({ children }) {
     setFormData(finalFormData);
 
     try {
+      const currentId = await ensureAssessmentId();
       // 1. Re-submit Step 2 with final retirement age
       const flow2Payload = {
-        client_name: finalFormData.name,
-        client_occupation: finalFormData.occupation,
-        client_designation: finalFormData.designation,
-        client_company: finalFormData.companyName,
-        client_dob: finalFormData.dob,
+        client_name: finalFormData.name || "",
+        client_occupation: finalFormData.occupation || "",
+        client_designation: finalFormData.designation || "",
+        client_company: finalFormData.companyName || "",
+        client_dob: finalFormData.dob || "",
         client_retirement_age: parseInt(finalFormData.targetRetireAge) || 60,
         spouse_retirement_age: 55,
       };
@@ -409,17 +417,17 @@ export default function AssessmentProvider({ children }) {
       if (finalFormData.spouseDob && finalFormData.spouseDob.trim()) {
         flow2Payload.spouse_dob = finalFormData.spouseDob;
       }
-      await assessmentService.submitFlow2(assessmentId, flow2Payload);
+      await assessmentService.submitFlow2(currentId, flow2Payload);
 
       // 2. Perform calculation
       const calcPayload = buildCalcPayload(finalFormData);
-      const calcRes = await assessmentService.calculateRetirement(assessmentId, calcPayload);
+      const calcRes = await assessmentService.calculateRetirement(currentId, calcPayload);
       setCalculationResult(calcRes.data || calcRes);
       setShowReport(true);
 
       // 3. Generate PDF Report in background
       try {
-        const reportRes = await reportService.generateReport(assessmentId);
+        const reportRes = await reportService.generateReport(currentId);
         const reportData = reportRes.data || reportRes;
         if (reportData && reportData.job_id) {
           const jobId = reportData.job_id;
@@ -434,7 +442,7 @@ export default function AssessmentProvider({ children }) {
               await new Promise((resolve) => setTimeout(resolve, 1000));
               checkCount++;
               try {
-                const statusRes = await reportService.checkReportStatus(assessmentId, jobId);
+                const statusRes = await reportService.checkReportStatus(currentId, jobId);
                 const statusData = statusRes.data || statusRes;
                 if (statusRes.status === "success" && statusData.status === "completed") {
                   setReportId(statusData.report_id || statusData.id);

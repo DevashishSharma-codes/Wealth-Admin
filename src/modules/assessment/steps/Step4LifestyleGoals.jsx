@@ -89,22 +89,22 @@ export default function Step4LifestyleGoals() {
 
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
-                      label="Target Year (YYYY) *"
+                      label="Target Year (YYYY)"
                       name={`goal-year-${goal.id}`}
                       value={goal.targetYear}
                       onChange={(e) => handleGoalInputChange(goal.id, "targetYear", e.target.value)}
                       placeholder="e.g. 2038"
                       type="number"
-                      required={true}
+                      required={false}
                     />
                     <FormField
-                      label="Today's Cost (INR) *"
+                      label="Today's Cost (INR)"
                       name={`goal-cost-${goal.id}`}
                       value={goal.todaysCost}
                       onChange={(e) => handleGoalInputChange(goal.id, "todaysCost", e.target.value)}
                       placeholder="e.g. 2000000"
                       type="number"
-                      required={true}
+                      required={false}
                     />
                   </div>
 
