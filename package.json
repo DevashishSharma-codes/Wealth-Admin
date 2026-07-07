@@ -10,12 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-avatar": "^1.2.2",
     "axios": "^1.18.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^1.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-is": "^19.2.7",
-    "recharts": "^3.9.1"
+    "recharts": "^3.9.1",
+    "tailwind-merge": "^3.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

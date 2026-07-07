@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { apiLogsMock } from "../../mock/logsMock";
 import { Terminal, Shield, Eye, ShieldAlert, Key, ToggleLeft, ToggleRight, Search } from "lucide-react";
-import Toast from "../../components/UI/Toast";
+import { useToast } from "../../components/UI/Toast";
 
 export default function ApiLogs() {
   const [logs, setLogs] = useState(apiLogsMock);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState({ message: "", type: "info" });
+  const { showToast } = useToast();
 
   const filteredLogs = logs.filter(
     (log) =>
@@ -25,22 +25,11 @@ export default function ApiLogs() {
       prev.map((log) => (log.id === id ? { ...log, ...{ status: nextStatus } } : log))
     );
 
-    setToast({
-      message: `API Key credentials status updated to "${nextStatus}".`,
-      type: "success",
-    });
+    showToast(`API Key credentials status updated to "${nextStatus}".`, "success");
   };
 
   return (
     <div className="ww-page">
-      {/* Toast Alert */}
-      {toast.message && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "info" })}
-        />
-      )}
 
       {/* Page Header */}
       <div className="ww-page-header">
@@ -75,7 +64,7 @@ export default function ApiLogs() {
               rateLimit: "1,000/min"
             };
             setLogs((prev) => [newKey, ...prev]);
-            setToast({ message: "New API Key generated successfully.", type: "success" });
+            showToast("New API Key generated successfully.", "success");
           }}
           className="px-4 py-2 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm"
         >

@@ -11,7 +11,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  TrendingUp
+  Briefcase,
+  MessageSquare
 } from "lucide-react";
 
 export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
@@ -22,6 +23,8 @@ export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCol
     { id: "reports", label: "Reports", icon: FileText },
     { id: "rates", label: "Rate Configuration", icon: Sliders },
     { id: "upload", label: "Excel Upload", icon: UploadCloud },
+    { id: "services", label: "Manage Services", icon: Briefcase },
+    { id: "testimonials", label: "Manage Testimonials", icon: MessageSquare },
     { id: "email", label: "Email & Marketing", icon: Mail },
     { id: "logs", label: "API Logs", icon: Terminal },
     { id: "settings", label: "Settings", icon: Settings },

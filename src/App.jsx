@@ -9,7 +9,10 @@ import ExcelUpload from "./modules/upload/ExcelUpload";
 import EmailMarketing from "./modules/email/EmailMarketing";
 import ApiLogs from "./modules/logs/ApiLogs";
 import SettingsPage from "./modules/settings/Settings";
+import ServicesAdmin from "./modules/services/ServicesAdmin";
+import TestimonialsAdmin from "./modules/testimonials/TestimonialsAdmin";
 import AssessmentProvider from "./context/AssessmentContext";
+import { ToastProvider } from "./components/UI/Toast";
 import "./App.css";
 
 export default function App() {
@@ -34,6 +37,10 @@ export default function App() {
         return <RateConfig />;
       case "upload":
         return <ExcelUpload />;
+      case "services":
+        return <ServicesAdmin />;
+      case "testimonials":
+        return <TestimonialsAdmin />;
       case "email":
         return <EmailMarketing />;
       case "logs":
@@ -46,13 +53,15 @@ export default function App() {
   };
 
   return (
-    <Layout
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      globalSearch={globalSearch}
-      setGlobalSearch={setGlobalSearch}
-    >
-      {renderActiveView()}
-    </Layout>
+    <ToastProvider>
+      <Layout
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        globalSearch={globalSearch}
+        setGlobalSearch={setGlobalSearch}
+      >
+        {renderActiveView()}
+      </Layout>
+    </ToastProvider>
   );
 }

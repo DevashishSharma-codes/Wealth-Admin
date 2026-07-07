@@ -53,3 +53,15 @@ export const exportAdminAssessments = () => {
     responseType: "blob",
   });
 };
+
+export const convertExcelToPdf = (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post("/admin/upload/convert-pdf", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    responseType: "blob",
+  });
+};
+

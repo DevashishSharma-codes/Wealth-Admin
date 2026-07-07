@@ -10,7 +10,7 @@ import {
   exportAdminAssessments
 } from "../../services/assessmentService";
 import { downloadAdminReport } from "../../services/reportService";
-import Toast from "../../components/UI/Toast";
+import { useToast } from "../../components/UI/Toast";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
@@ -24,7 +24,7 @@ export default function UsersList() {
   const [downloadingExcelId, setDownloadingExcelId] = useState(null);
   const [exportingUsers, setExportingUsers] = useState(false);
   const [exportingAssessments, setExportingAssessments] = useState(false);
-  const [toast, setToast] = useState({ message: "", type: "info" });
+  const { showToast } = useToast();
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -157,9 +157,10 @@ export default function UsersList() {
   const downloadAssessmentExcel = async (assessmentId) => {
     if (!assessmentId) return;
     setDownloadingExcelId(assessmentId);
-    setToast({ message: "Preparing Excel export for assessment...", type: "info" });
+    showToast("Preparing Excel export for assessment...", "info");
     try {
       const response = await exportAdminAssessment(assessmentId);
+      console.log(`[Excel Download] Assessment ${assessmentId} Export Response Blob data:`, response);
       const url = URL.createObjectURL(new Blob([response]));
       const link = document.createElement("a");
       link.href = url;
@@ -168,10 +169,10 @@ export default function UsersList() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setToast({ message: "Excel export downloaded successfully!", type: "success" });
+      showToast("Excel export downloaded successfully!", "success");
     } catch (error) {
       console.error("Failed to download assessment Excel:", error);
-      setToast({ message: "Failed to download Excel report: " + error.message, type: "error" });
+      showToast("Failed to download Excel report: " + error.message, "error");
     } finally {
       setDownloadingExcelId(null);
     }
@@ -179,9 +180,10 @@ export default function UsersList() {
 
   const downloadUsersExcel = async () => {
     setExportingUsers(true);
-    setToast({ message: "Exporting all users to Excel...", type: "info" });
+    showToast("Exporting all users to Excel...", "info");
     try {
       const response = await exportAdminUsers();
+      console.log("[Excel Download] Users Export Response Blob data:", response);
       const url = URL.createObjectURL(new Blob([response]));
       const link = document.createElement("a");
       link.href = url;
@@ -190,10 +192,10 @@ export default function UsersList() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setToast({ message: "Users list exported successfully!", type: "success" });
+      showToast("Users list exported successfully!", "success");
     } catch (error) {
       console.error("Failed to export users to Excel:", error);
-      setToast({ message: "Failed to export users: " + error.message, type: "error" });
+      showToast("Failed to export users: " + error.message, "error");
     } finally {
       setExportingUsers(false);
     }
@@ -201,9 +203,10 @@ export default function UsersList() {
 
   const downloadAssessmentsExcel = async () => {
     setExportingAssessments(true);
-    setToast({ message: "Exporting all assessments to Excel...", type: "info" });
+    showToast("Exporting all assessments to Excel...", "info");
     try {
       const response = await exportAdminAssessments();
+      console.log("[Excel Download] Assessments Export Response Blob data:", response);
       const url = URL.createObjectURL(new Blob([response]));
       const link = document.createElement("a");
       link.href = url;
@@ -212,10 +215,10 @@ export default function UsersList() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setToast({ message: "Assessments list exported successfully!", type: "success" });
+      showToast("Assessments list exported successfully!", "success");
     } catch (error) {
       console.error("Failed to export assessments to Excel:", error);
-      setToast({ message: "Failed to export assessments: " + error.message, type: "error" });
+      showToast("Failed to export assessments: " + error.message, "error");
     } finally {
       setExportingAssessments(false);
     }
@@ -793,11 +796,6 @@ export default function UsersList() {
         </div>,
         document.body
       )}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ message: "", type: "info" })}
-      />
     </div>
   );
 }

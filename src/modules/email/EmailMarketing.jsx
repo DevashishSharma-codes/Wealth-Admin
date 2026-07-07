@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Mail, Eye, Send, Paperclip, Bold, Italic, List, Link, X, AlertTriangle, FileText } from "lucide-react";
-import Toast from "../../components/UI/Toast";
+import { useToast } from "../../components/UI/Toast";
 
 export default function EmailMarketing() {
   const [subject, setSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [sending, setSending] = useState(false);
-  const [toast, setToast] = useState({ message: "", type: "info" });
+  const { showToast } = useToast();
   const [attachmentError, setAttachmentError] = useState(null);
 
   // Tracks active text styles at user's cursor position
@@ -60,18 +60,12 @@ export default function EmailMarketing() {
 
       if (currentTotal + incomingTotal > maxTotalSize) {
         setAttachmentError("Attachments size exceeds the maximum limit of 12MB.");
-        setToast({
-          message: "Unable to attach. File limits exceeded.",
-          type: "error",
-        });
+        showToast("Unable to attach. File limits exceeded.", "error");
         return;
       }
 
       setAttachments((prev) => [...prev, ...newFiles]);
-      setToast({
-        message: `${newFiles.length} file(s) attached successfully.`,
-        type: "success",
-      });
+      showToast(`${newFiles.length} file(s) attached successfully.`, "success");
     }
   };
 
@@ -89,10 +83,7 @@ export default function EmailMarketing() {
     setSending(true);
     setTimeout(() => {
       setSending(false);
-      setToast({
-        message: `Email campaign dispatched successfully.`,
-        type: "success",
-      });
+      showToast(`Email campaign dispatched successfully.`, "success");
       setSubject("");
       setEmailBody("");
       if (editorRef.current) {
@@ -129,14 +120,6 @@ export default function EmailMarketing() {
 
   return (
     <div className="ww-page">
-      {/* Toast alert */}
-      {toast.message && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "info" })}
-        />
-      )}
 
       {/* Page Header */}
       <div className="ww-page-header">

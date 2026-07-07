@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as ratesService from "../../services/ratesService";
 import { Sliders, Save, RefreshCw, AlertTriangle, CheckCircle, Info } from "lucide-react";
-import Toast from "../../components/UI/Toast";
+import { useToast } from "../../components/UI/Toast";
 
 export default function RateConfig() {
   const [rates, setRates] = useState({
@@ -24,8 +24,7 @@ export default function RateConfig() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
-  // Toast notifications state
-  const [toast, setToast] = useState({ message: "", type: "info" });
+  const { showToast } = useToast();
 
   const fetchRates = async () => {
     setLoading(true);
@@ -114,20 +113,14 @@ export default function RateConfig() {
       
       localStorage.setItem("WW_PF_GROWTH", parseFloat(formInputs.pf_growth).toFixed(2));
       
-      setToast({
-        message: "Inflation & Return configurations updated successfully!",
-        type: "success",
-      });
+      showToast("Inflation & Return configurations updated successfully!", "success");
       // Fetch latest configuration to reload parameters and audit trails
       await fetchRates();
       await fetchRatesHistory();
     } catch (error) {
       console.error("Rates update failed:", error);
       setErrorMsg(error.message || "Failed to update rates configurations.");
-      setToast({
-        message: error.message || "Rates update rejected by server.",
-        type: "error",
-      });
+      showToast(error.message || "Rates update rejected by server.", "error");
     } finally {
       setSaving(false);
     }
@@ -140,14 +133,6 @@ export default function RateConfig() {
 
   return (
     <div className="ww-page">
-      {/* Toast Alert */}
-      {toast.message && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "info" })}
-        />
-      )}
 
       {/* Page Header */}
       <div className="ww-page-header">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Settings, Save, Key, Shield, RefreshCw, Radio } from "lucide-react";
-import Toast from "../../components/UI/Toast";
+import { useToast } from "../../components/UI/Toast";
 import { API_BASE_URL, API_KEY, ADMIN_API_KEY } from "../../services/api";
 
 export default function SettingsPage() {
@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const [userKey, setUserKey] = useState("");
   const [adminKey, setAdminKey] = useState("");
   
-  const [toast, setToast] = useState({ message: "", type: "info" });
+  const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,10 +29,7 @@ export default function SettingsPage() {
 
     setTimeout(() => {
       setSaving(false);
-      setToast({
-        message: "System environment settings saved! Reloading API connections.",
-        type: "success",
-      });
+      showToast("System environment settings saved! Reloading API connections.", "success");
       
       // Prompt app reload to apply Axios key configurations
       setTimeout(() => {
@@ -50,22 +47,11 @@ export default function SettingsPage() {
     setUserKey(API_KEY);
     setAdminKey(ADMIN_API_KEY);
 
-    setToast({
-      message: "Environment variables reset to baseline configurations.",
-      type: "info",
-    });
+    showToast("Environment variables reset to baseline configurations.", "info");
   };
 
   return (
     <div className="ww-page max-w-2xl">
-      {/* Toast Alert */}
-      {toast.message && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "info" })}
-        />
-      )}
 
       {/* Page Header */}
       <div className="ww-page-header">
