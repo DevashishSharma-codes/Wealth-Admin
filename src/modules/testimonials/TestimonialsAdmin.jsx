@@ -13,7 +13,7 @@ import { useToast } from "../../components/UI/Toast";
 import AdminModal from "../../components/UI/AdminModal";
 import StatusToggle from "../../components/UI/StatusToggle";
 import ExpandableText from "../../components/UI/ExpandableText";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/UI/Avatar";
 
 const initialTestimonials = [
   {
