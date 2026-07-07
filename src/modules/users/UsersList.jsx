@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Search, Filter, X, Eye, Calendar, Award, CheckCircle, HelpCircle, Briefcase, Heart, User, MapPin, Download, Loader2, FileSpreadsheet } from "lucide-react";
-import { getAdminUsers, getAdminLeads, getAdminAssessments } from "../../services/assessmentService";
+import { 
+  getAdminUsers, 
+  getAdminLeads, 
+  getAdminAssessments,
+  exportAdminAssessment,
+  exportAdminUsers,
+  exportAdminAssessments
+} from "../../services/assessmentService";
 import { downloadAdminReport } from "../../services/reportService";
+import Toast from "../../components/UI/Toast";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
@@ -13,6 +21,10 @@ export default function UsersList() {
   const [showFreeLeadsOnly, setShowFreeLeadsOnly] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
+  const [downloadingExcelId, setDownloadingExcelId] = useState(null);
+  const [exportingUsers, setExportingUsers] = useState(false);
+  const [exportingAssessments, setExportingAssessments] = useState(false);
+  const [toast, setToast] = useState({ message: "", type: "info" });
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +154,73 @@ export default function UsersList() {
     }
   };
 
+  const downloadAssessmentExcel = async (assessmentId) => {
+    if (!assessmentId) return;
+    setDownloadingExcelId(assessmentId);
+    setToast({ message: "Preparing Excel export for assessment...", type: "info" });
+    try {
+      const response = await exportAdminAssessment(assessmentId);
+      const url = URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `assessment-export-${assessmentId}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setToast({ message: "Excel export downloaded successfully!", type: "success" });
+    } catch (error) {
+      console.error("Failed to download assessment Excel:", error);
+      setToast({ message: "Failed to download Excel report: " + error.message, type: "error" });
+    } finally {
+      setDownloadingExcelId(null);
+    }
+  };
+
+  const downloadUsersExcel = async () => {
+    setExportingUsers(true);
+    setToast({ message: "Exporting all users to Excel...", type: "info" });
+    try {
+      const response = await exportAdminUsers();
+      const url = URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `users-export-${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setToast({ message: "Users list exported successfully!", type: "success" });
+    } catch (error) {
+      console.error("Failed to export users to Excel:", error);
+      setToast({ message: "Failed to export users: " + error.message, type: "error" });
+    } finally {
+      setExportingUsers(false);
+    }
+  };
+
+  const downloadAssessmentsExcel = async () => {
+    setExportingAssessments(true);
+    setToast({ message: "Exporting all assessments to Excel...", type: "info" });
+    try {
+      const response = await exportAdminAssessments();
+      const url = URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `assessments-export-${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setToast({ message: "Assessments list exported successfully!", type: "success" });
+    } catch (error) {
+      console.error("Failed to export assessments to Excel:", error);
+      setToast({ message: "Failed to export assessments: " + error.message, type: "error" });
+    } finally {
+      setExportingAssessments(false);
+    }
+  };
+
 
 
   const filteredUsers = users.filter((user) => {
@@ -183,6 +262,36 @@ export default function UsersList() {
         <div>
           <h2 className="ww-page-title">Users & Assessments</h2>
           <p className="ww-page-subtitle">Manage client data and financial assessment statuses.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={downloadUsersExcel}
+            disabled={exportingUsers}
+            className="ww-secondary-btn flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Download all users to Excel"
+          >
+            {exportingUsers ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            )}
+            Export Users Excel
+          </button>
+          <button
+            type="button"
+            onClick={downloadAssessmentsExcel}
+            disabled={exportingAssessments}
+            className="ww-secondary-btn flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Download all assessments to Excel"
+          >
+            {exportingAssessments ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            )}
+            Export Assessments Excel
+          </button>
         </div>
       </div>
 
@@ -321,11 +430,20 @@ export default function UsersList() {
                           <Eye className="w-3.5 h-3.5" /> View Details
                         </button>
                         <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1.5"
-                          title="View Excel Report"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadAssessmentExcel(user.id);
+                          }}
+                          disabled={downloadingExcelId === user.id}
+                          className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Export row-wise Excel"
                         >
-                          <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                          {downloadingExcelId === user.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                          )}
+                          Excel
                         </button>
                         {user.reportId ? (
                           <button
@@ -484,10 +602,17 @@ export default function UsersList() {
                   </span>
                   <button
                     type="button"
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
+                    onClick={() => downloadAssessmentExcel(selectedUser.id)}
+                    disabled={downloadingExcelId === selectedUser.id}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0 disabled:cursor-not-allowed"
                     title="Export to Excel"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                    {downloadingExcelId === selectedUser.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                    )}
+                    Excel
                   </button>
                   {selectedUser.reportId && (
                     <button
@@ -668,6 +793,11 @@ export default function UsersList() {
         </div>,
         document.body
       )}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: "info" })}
+      />
     </div>
   );
 }

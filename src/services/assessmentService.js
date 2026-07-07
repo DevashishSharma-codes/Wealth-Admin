@@ -35,3 +35,21 @@ export const getAdminLeads = (params) => {
 export const getAdminAssessments = (params) => {
   return api.get("/admin/assessments", { params });
 };
+
+export const exportAdminAssessment = (assessmentId) => {
+  return api.get(`/admin/assessments/${assessmentId}/export`, {
+    responseType: "blob",
+  });
+};
+
+export const exportAdminUsers = () => {
+  return api.get("/admin/users/export", {
+    responseType: "blob",
+  });
+};
+
+export const exportAdminAssessments = () => {
+  return api.get("/admin/assessments/export", {
+    responseType: "blob",
+  });
+};
