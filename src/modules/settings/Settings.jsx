@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Settings, Save, Key, Shield, RefreshCw, Radio } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
-import { API_BASE_URL, API_KEY, ADMIN_API_KEY } from "../../services/api";
+import { API_BASE_URL, API_KEY, ADMIN_API_KEY } from "../../config/api";
 
 export default function SettingsPage() {
   const [apiUrl, setApiUrl] = useState("");

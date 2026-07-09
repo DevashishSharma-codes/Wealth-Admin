@@ -3,8 +3,8 @@ import axios from "axios";
 // Environment settings checking with localStorage overrides
 export const API_BASE_URL =
   localStorage.getItem("WW_API_URL") ||
-  import.meta.env.VITE_API_URL ||
-  "https://wealth-wisdom-six.vercel.app/api/v1";
+  import.meta.env.VITE_API_BASE_URL ||
+  "/api/v1";
 
 export const ADMIN_API_KEY =
   localStorage.getItem("WW_ADMIN_API_KEY") ||

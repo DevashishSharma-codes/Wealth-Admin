@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "../config/api";
 
 /**
  * Fetch detailed server readiness health indicators.

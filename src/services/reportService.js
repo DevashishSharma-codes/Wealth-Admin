@@ -1,4 +1,4 @@
-import api, { API_BASE_URL, ADMIN_API_KEY, API_KEY } from "./api";
+import api, { API_BASE_URL, ADMIN_API_KEY, API_KEY } from "../config/api";
 
 export const generateReport = (assessmentId) => {
   return api.post(`/report/${assessmentId}/generate`);
