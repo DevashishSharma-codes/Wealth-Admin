@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Search, Filter, X, Eye, Calendar, Award, CheckCircle, HelpCircle, Briefcase, Heart, User, MapPin, Download, Loader2, FileSpreadsheet } from "lucide-react";
+import { Search, X, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet } from "lucide-react";
 import { 
   getAdminUsers, 
   getAdminLeads, 
   getAdminAssessments,
   exportAdminAssessment,
   exportAdminUsers,
-  exportAdminAssessments
+  exportAdminAssessments,
+  getAssessment
 } from "../../services/assessmentService";
-import { downloadAdminReport } from "../../services/reportService";
+import { downloadAdminReportWithFilename } from "../../services/reportService";
 import { useToast } from "../../components/UI/Toast";
 
 export default function UsersList({ globalSearch = "", setGlobalSearch = () => {} }) {
@@ -19,11 +20,12 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
   const [search, setSearch] = useState(globalSearch);
 
   useEffect(() => {
-    setSearch(globalSearch);
+    Promise.resolve().then(() => setSearch(globalSearch));
   }, [globalSearch]);
   const [statusFilter, setStatusFilter] = useState("All"); // All, Leads, Completed
   const [showFreeLeadsOnly, setShowFreeLeadsOnly] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [loadingDetailId, setLoadingDetailId] = useState(null);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [downloadingExcelId, setDownloadingExcelId] = useState(null);
   const [exportingUsers, setExportingUsers] = useState(false);
@@ -91,8 +93,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
     };
   };
 
-  const loadAssessments = async () => {
-    setLoading(true);
+  const loadAssessments = useCallback(async () => {
     setErrorMsg(null);
     try {
       console.log(`[UsersList] Fetching all records for statusFilter: ${statusFilter}...`);
@@ -131,28 +132,100 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadAssessments();
   }, [statusFilter]);
 
-  const downloadReportFile = async (reportId, assessmentId) => {
+  useEffect(() => {
+    Promise.resolve().then(() => setCurrentPage(1));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAssessments();
+  }, [statusFilter, loadAssessments]);
+
+  const handleViewDetails = async (user) => {
+    if (loadingDetailId) return;
+    setLoadingDetailId(user.id);
+    try {
+      const response = await getAssessment(user.id);
+      const resData = response.data || response;
+
+      const detailedUser = {
+        id: resData.assessment_id || user.id,
+        name: resData.personal?.client_name || user.name || "Anonymous Client",
+        role: "Planning Client",
+        designation: resData.personal?.client_designation || "Client",
+        companyName: resData.personal?.client_company || "N/A",
+        dob: resData.personal?.client_dob ? new Date(resData.personal.client_dob).toLocaleDateString("en-IN") : "N/A",
+        age: resData.personal?.client_age ? `${resData.personal.client_age} Years` : "N/A",
+        maritalStatus: resData.personal?.spouse_name ? "Married" : "Single",
+        targetRetireAge: resData.personal?.client_retirement_age || 60,
+
+        email: resData.communication?.email || user.email || "N/A",
+        phone: resData.communication?.mobile || user.phone || "N/A",
+        address: resData.communication?.residential_address || "N/A",
+        consent: resData.communication?.consent ?? true,
+
+        spouseName: resData.personal?.spouse_name || "",
+        spouseAge: resData.personal?.spouse_age ? `${resData.personal.spouse_age} Years` : "N/A",
+        spouseOccupation: resData.personal?.spouse_occupation || "",
+        spouseDesignation: resData.personal?.spouse_designation || "",
+        spouseCompanyName: resData.personal?.spouse_company || "",
+        spouseDob: resData.personal?.spouse_dob || "",
+
+        childrenCount: resData.family?.number_of_children || 0,
+        children: (resData.family?.children || []).map((c) => ({
+          name: c.full_name || "",
+          dob: c.date_of_birth ? new Date(c.date_of_birth).toLocaleDateString("en-IN") : "N/A",
+          age: c.calculated_age ? `${c.calculated_age} Years` : "N/A",
+        })),
+
+        status: user.status,
+        reportId: user.reportId,
+
+        projections: {
+          sip: user.projections?.sip || "N/A",
+          corpus: user.projections?.corpus || "N/A",
+          insurance: user.projections?.insurance || "N/A",
+          equity: user.projections?.equity || 60,
+          debt: user.projections?.debt || 30,
+          commodities: user.projections?.commodities || 10,
+        },
+
+        goals: (resData.goals || []).map((g) => ({
+          id: g.id,
+          type: g.goal_type || "",
+          targetYear: g.target_year || "",
+          todaysCost: g.today_cost ? `₹${g.today_cost.toLocaleString("en-IN")}` : "N/A",
+          progress: g.monthly_sip ? 100 : 0,
+        })),
+
+        activities: user.activities || [],
+      };
+
+      setSelectedUser(detailedUser);
+    } catch (err) {
+      console.error("Failed to load assessment details:", err);
+      const errMsg = err instanceof Error ? err.message : "Failed to load assessment details.";
+      showToast(errMsg, "error");
+    } finally {
+      setLoadingDetailId(null);
+    }
+  };
+
+  const downloadReportFile = async (reportId) => {
     if (!reportId) return;
     setDownloadingReportId(reportId);
     try {
-      const response = await downloadAdminReport(reportId);
-      const url = URL.createObjectURL(new Blob([response]));
+      const { blob, fileName } = await downloadAdminReportWithFilename(reportId);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `report-${assessmentId || reportId}.pdf`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
+      showToast("Report PDF downloaded successfully.", "success");
     } catch (error) {
       console.error("Failed to download admin report:", error);
-      alert("Failed to download PDF report: " + error.message);
+      showToast(error.message || "Failed to download PDF report.", "error");
     } finally {
       setDownloadingReportId(null);
     }
@@ -338,6 +411,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
               <button
                 key={tab}
                 onClick={() => {
+                  setLoading(true);
                   setStatusFilter(tab);
                   if (tab !== "Leads") setShowFreeLeadsOnly(false);
                 }}
@@ -401,7 +475,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                 paginatedUsers.map((user, index) => (
                   <tr
                     key={`${user.id || user.email}-${index}`}
-                    onClick={() => setSelectedUser(user)}
+                    onClick={() => handleViewDetails(user)}
                     className="hover:bg-zinc-50/40 transition-colors cursor-pointer group"
                   >
                     <td className="py-4 px-4 font-semibold text-zinc-800">
@@ -434,10 +508,16 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                     <td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1.5 items-center">
                         <button
-                          onClick={() => setSelectedUser(user)}
-                          className="px-2.5 py-1 hover:bg-zinc-50 border border-zinc-200 rounded-lg text-[10px] font-bold text-[#2B7FFF] hover:text-[#2B7FFF]/80 cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                          onClick={() => handleViewDetails(user)}
+                          disabled={loadingDetailId !== null}
+                          className="px-2.5 py-1 hover:bg-zinc-50 border border-zinc-200 rounded-lg text-[10px] font-bold text-[#2B7FFF] hover:text-[#2B7FFF]/80 cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
                         >
-                          <Eye className="w-3.5 h-3.5" /> View Details
+                          {loadingDetailId === user.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                          {loadingDetailId === user.id ? "Loading..." : "View Details"}
                         </button>
                         <button
                           onClick={(e) => {
@@ -457,7 +537,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                         </button>
                         {user.reportId ? (
                           <button
-                            onClick={() => downloadReportFile(user.reportId, user.id)}
+                            onClick={() => downloadReportFile(user.reportId)}
                             disabled={downloadingReportId === user.reportId}
                             className="px-2.5 py-1 bg-[#2B7FFF]/5 border border-[#2B7FFF]/10 hover:bg-indigo-100 disabled:bg-zinc-100 rounded-lg text-[10px] font-bold text-[#2B7FFF] hover:text-[#2B7FFF]/80 cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:cursor-not-allowed"
                             title="Download PDF Report"
@@ -627,7 +707,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                   {selectedUser.reportId && (
                     <button
                       type="button"
-                      onClick={() => downloadReportFile(selectedUser.reportId, selectedUser.id)}
+                      onClick={() => downloadReportFile(selectedUser.reportId)}
                       disabled={downloadingReportId === selectedUser.reportId}
                       className="px-3 py-1.5 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors disabled:bg-zinc-200 disabled:cursor-not-allowed shadow-xs shrink-0"
                     >

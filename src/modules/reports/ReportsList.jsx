@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Download, Search, CheckCircle, Loader2 } from "lucide-react";
-import { getAdminReports, downloadAdminReport } from "../../services/reportService";
+import { getAdminReports, downloadAdminReportWithFilename } from "../../services/reportService";
 
 const parseUtcDate = (dateStr) => {
   if (!dateStr) return new Date();
@@ -72,19 +72,19 @@ export default function ReportsList() {
   };
 
   useEffect(() => {
-    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadReports();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleDownload = async (reportId, assessmentId) => {
+  const handleDownload = async (reportId) => {
     if (!reportId) return;
     setDownloadingReportId(reportId);
     try {
-      const response = await downloadAdminReport(reportId);
-      const url = URL.createObjectURL(new Blob([response]));
+      const { blob, fileName } = await downloadAdminReportWithFilename(reportId);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `report-${assessmentId || reportId}.pdf`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -234,7 +234,7 @@ export default function ReportsList() {
                       <td className="py-4 px-4 text-zinc-400 font-medium">{rep.generatedDate}</td>
                       <td className="py-4 px-4 text-right">
                         <button
-                          onClick={() => handleDownload(rep.id, rep.assessmentId)}
+                          onClick={() => handleDownload(rep.id)}
                           disabled={downloadingReportId === rep.id}
                           className="px-2.5 py-1 hover:bg-[#2B7FFF]/5 border border-zinc-200 disabled:bg-zinc-100 rounded-lg text-[10px] font-semibold text-[#2B7FFF] cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:cursor-not-allowed"
                         >

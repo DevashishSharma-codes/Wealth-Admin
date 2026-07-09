@@ -1,4 +1,4 @@
-import React from "react";
+
 import { useAssessment } from "../../../context/AssessmentContext";
 import { validateStep1 } from "../../../utils/validators";
 import StepNavigation from "../../../components/UI/StepNavigation";
@@ -96,21 +96,6 @@ export default function Step1Communication() {
           </div>
         </div>
 
-        {/* Consent box */}
-        <div className="pt-2">
-          <label className="flex items-start gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              name="consent"
-              checked={!!formData.consent}
-              onChange={handleInputChange}
-              className="mt-0.5"
-            />
-            <span className="text-[10px] font-bold text-zinc-400 leading-normal">
-              I consent to share the communication details and allow contact to save this assessment. (Optional)
-            </span>
-          </label>
-        </div>
       </div>
 
       <StepNavigation

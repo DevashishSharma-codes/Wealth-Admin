@@ -1,7 +1,9 @@
-import React, { createContext, useState, useContext } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useContext } from "react";
 import * as assessmentService from "../services/assessmentService";
 import * as reportService from "../services/reportService";
 import { buildCalcPayload } from "../utils/formatters";
+import { useToast } from "../components/UI/Toast";
 
 export const AssessmentContext = createContext(null);
 
@@ -66,6 +68,7 @@ export default function AssessmentProvider({ children }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const { showToast } = useToast();
 
   const resetAssessment = () => {
     setStep(1);
@@ -85,7 +88,7 @@ export default function AssessmentProvider({ children }) {
       const updated = { ...prev, ...fields };
 
       // Auto calculate years until retirement when targetRetireAge or dob changes
-      if (fields.hasOwnProperty("targetRetireAge") || fields.hasOwnProperty("dob")) {
+      if ("targetRetireAge" in fields || "dob" in fields) {
         const retireAgeVal = parseInt(updated.targetRetireAge, 10);
         if (updated.dob) {
           const parts = updated.dob.split("/");
@@ -108,7 +111,7 @@ export default function AssessmentProvider({ children }) {
       const updated = [...prev];
       updated[index] = { ...updated[index], ...fields };
 
-      if (fields.hasOwnProperty("dob") && fields.dob) {
+      if ("dob" in fields && fields.dob) {
         const parts = fields.dob.split("/");
         if (parts.length === 3) {
           const day = parseInt(parts[0], 10);
@@ -186,7 +189,7 @@ export default function AssessmentProvider({ children }) {
         setAssessmentId(currentId);
       } catch (e) {
         console.error("createAssessment failed:", e);
-        throw new Error("Failed to initialize assessment on the server. Please check connection.");
+        throw new Error("Failed to initialize assessment on the server. Please check connection.", { cause: e });
       }
     }
     return currentId;
@@ -200,7 +203,7 @@ export default function AssessmentProvider({ children }) {
       const payload = {
         mobile: formData.mobile || "",
         email: formData.email || "",
-        consent: !!formData.consent,
+        consent: true,
       };
       if (formData.spouseMobile && formData.spouseMobile.trim()) {
         payload.spouse_mobile = formData.spouseMobile;
@@ -469,22 +472,29 @@ export default function AssessmentProvider({ children }) {
   };
 
   const downloadReport = async () => {
-    if (!assessmentId || !reportId) {
-      alert("PDF report is still generating in the background. Please wait a few seconds and try again.");
+    if (!assessmentId) {
+      showToast("Assessment ID is missing.", "error");
       return;
     }
     try {
-      const reportBlob = await reportService.downloadGeneratedReport(assessmentId, reportId);
-      const download = reportService.createReportDownload(reportBlob, assessmentId);
-      const link = document.createElement("a");
-      link.href = download.url;
-      link.download = download.fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const reportBlob = await reportService.downloadClientReport(assessmentId);
+      if (reportBlob.type === "application/json") {
+        const text = await reportBlob.text();
+        const resJson = JSON.parse(text);
+        showToast(resJson.message || "Report sent to email successfully.", "success");
+      } else {
+        const downloadUrl = URL.createObjectURL(reportBlob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `report-${assessmentId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast("Report PDF downloaded successfully.", "success");
+      }
     } catch (error) {
       console.error("PDF download failed:", error);
-      alert("Failed to download PDF report. Please try again.");
+      showToast(error.message || "Failed to download PDF report. Please try again.", "error");
     }
   };
 

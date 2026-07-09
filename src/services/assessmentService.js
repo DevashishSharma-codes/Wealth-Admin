@@ -36,6 +36,10 @@ export const getAdminAssessments = (params) => {
   return api.get("/admin/assessments", { params });
 };
 
+export const getAssessment = (assessmentId) => {
+  return api.get(`/assessment/${assessmentId}`);
+};
+
 export const exportAdminAssessment = (assessmentId) => {
   return api.get(`/admin/assessments/${assessmentId}/export`, {
     responseType: "blob",

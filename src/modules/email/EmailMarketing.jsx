@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mail, Eye, Send, Paperclip, Bold, Italic, List, Link, X, AlertTriangle, FileText } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
+import { sendCampaign, getRecipients } from "../../services/marketingService";
 
 export default function EmailMarketing() {
   const [subject, setSubject] = useState("");
@@ -9,6 +10,7 @@ export default function EmailMarketing() {
   const [sending, setSending] = useState(false);
   const { showToast } = useToast();
   const [attachmentError, setAttachmentError] = useState(null);
+  const [recipientsCount, setRecipientsCount] = useState(null);
 
   // Tracks active text styles at user's cursor position
   const [activeStyles, setActiveStyles] = useState({
@@ -25,6 +27,23 @@ export default function EmailMarketing() {
     if (editorRef.current && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = emailBody;
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    getRecipients()
+      .then((res) => {
+        const list = res.data || res;
+        if (Array.isArray(list)) {
+          setRecipientsCount(list.length);
+        } else if (list && typeof list === "object") {
+          const values = Object.values(list);
+          const arr = values.find(Array.isArray);
+          if (arr) setRecipientsCount(arr.length);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to retrieve recipients count:", err);
+      });
   }, []);
 
   const updateActiveStyles = () => {
@@ -74,15 +93,15 @@ export default function EmailMarketing() {
     setAttachmentError(null);
   };
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!subject || !emailBody) {
+    if (!subject || !emailBody || emailBody === "<br>") {
       alert("Please fill in the subject and email body fields.");
       return;
     }
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      await sendCampaign(subject, emailBody, attachments);
       showToast(`Email campaign dispatched successfully.`, "success");
       setSubject("");
       setEmailBody("");
@@ -91,7 +110,13 @@ export default function EmailMarketing() {
       }
       setAttachments([]);
       setActiveStyles({ bold: false, italic: false, list: false, link: false });
-    }, 2000);
+    } catch (err) {
+      console.error("Failed to send email campaign:", err);
+      const errMsg = err instanceof Error ? err.message : "Failed to send email campaign.";
+      showToast(errMsg, "error");
+    } finally {
+      setSending(false);
+    }
   };
 
   const formatText = (command) => {
@@ -132,9 +157,16 @@ export default function EmailMarketing() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Editor Form Panel */}
         <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-xs space-y-4">
-          <div className="border-b border-zinc-100 pb-3 flex items-center gap-2">
-            <Mail className="w-4 h-4 text-[#2B7FFF]" />
-            <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Email Composer</span>
+          <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-[#2B7FFF]" />
+              <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Email Composer</span>
+            </div>
+            {recipientsCount !== null && (
+              <span className="bg-[#2B7FFF]/10 text-[#2B7FFF] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                Targeting {recipientsCount} Recipients
+              </span>
+            )}
           </div>
 
           <form onSubmit={handleSend} className="space-y-4">

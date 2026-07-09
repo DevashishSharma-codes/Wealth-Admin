@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 export const validateStep1 = (formData) => {
   return true;
 };

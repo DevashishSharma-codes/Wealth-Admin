@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Info,
   Plus,
@@ -8,36 +8,19 @@ import {
   Eye,
   Quote,
   BadgeCheck,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import AdminModal from "../../components/UI/AdminModal";
 import StatusToggle from "../../components/UI/StatusToggle";
 import ExpandableText from "../../components/UI/ExpandableText";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/UI/Avatar";
-
-const initialTestimonials = [
-  {
-    id: "tst-1",
-    name: "Aaditya Patel",
-    message: "The automated assessment builder helped me identify a major gap in my retirement planning. Excellent service!",
-    visible: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aaditya",
-  },
-  {
-    id: "tst-2",
-    name: "Sarah Jenkins",
-    message: "Highly recommended for clear financial analytics and custom rates. The interface is smooth and intuitive.",
-    visible: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-  },
-  {
-    id: "tst-3",
-    name: "Michael Chang",
-    message: "I appreciate the transparency and structured audits. The team has optimized our portfolio tax liabilities.",
-    visible: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-  },
-];
+import {
+  getTestimonials,
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial,
+} from "../../services/testimonialsService";
 
 // Small deterministic accent rotation for avatar fallbacks, all pulled from
 // the existing theme palette (blue / emerald / amber) — nothing new.
@@ -63,7 +46,7 @@ function getAvatarStyle(name) {
 
 // Reusable shadcn-based avatar for a testimonial, sized via className.
 function TestimonialAvatar({ testimonial, className = "w-9 h-9", ring = false }) {
-  const style = getAvatarStyle(testimonial.name);
+  const style = getAvatarStyle(testimonial.name || "Client");
   return (
     <Avatar className={`${className} ${ring ? "ring-2 ring-white shadow-md" : ""} shrink-0`}>
       {testimonial.avatar ? (
@@ -72,14 +55,15 @@ function TestimonialAvatar({ testimonial, className = "w-9 h-9", ring = false })
       <AvatarFallback
         className={`${style.bg} ${style.text} font-extrabold text-[11px]`}
       >
-        {getInitials(testimonial.name)}
+        {getInitials(testimonial.name || "Client")}
       </AvatarFallback>
     </Avatar>
   );
 }
 
 export default function TestimonialsAdmin() {
-  const [testimonials, setTestimonials] = useState(initialTestimonials);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTestimonial, setPreviewTestimonial] = useState(null);
@@ -90,6 +74,32 @@ export default function TestimonialsAdmin() {
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState("");
+
+  const fetchTestimonials = useCallback(async () => {
+    try {
+      const response = await getTestimonials();
+      const rawList = response.data || response;
+      const parsedList = (Array.isArray(rawList) ? rawList : (rawList?.items || [])).map((t) => ({
+        id: t.id,
+        name: t.name || "",
+        message: t.message || "",
+        visible: t.visible !== undefined ? !!t.visible : !!t.is_visible,
+        avatar: t.avatar || "",
+      }));
+      setTestimonials(parsedList);
+    } catch (err) {
+      console.error("Failed to load testimonials:", err);
+      const errMsg = err instanceof Error ? err.message : "Failed to load testimonials.";
+      showToast(errMsg, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTestimonials();
+  }, [fetchTestimonials]);
 
   const handleOpenAdd = () => {
     setCurrentTestimonial(null);
@@ -114,70 +124,57 @@ export default function TestimonialsAdmin() {
     setIsPreviewOpen(true);
   };
 
-  const handleToggleVisibility = (id) => {
+  const handleToggleVisibility = async (id) => {
     const testimonial = testimonials.find((t) => t.id === id);
     if (!testimonial) return;
 
     const visibleCount = testimonials.filter((t) => t.visible).length;
+    const nextVisible = !testimonial.visible;
 
-    if (testimonial.visible) {
-      if (visibleCount <= 3) {
-        showToast(
-          "Cannot hide this testimonial. A minimum of 3 visible testimonials is required to maintain the website layout.",
-          "error"
-        );
-        return;
-      }
-    } else {
-      if (visibleCount >= 3) {
-        showToast(
-          "Cannot display this testimonial. A maximum of 3 visible testimonials is allowed. Please hide another testimonial first.",
-          "error"
-        );
-        return;
-      }
+    // Enforce max 3 visible testimonials (or exactly 3, but client requested max 3)
+    if (nextVisible && visibleCount >= 3) {
+      showToast(
+        "Cannot display this testimonial. A maximum of 3 visible testimonials is allowed. Please hide another testimonial first.",
+        "error"
+      );
+      return;
     }
 
-    setTestimonials((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const nextVisible = !t.visible;
-          showToast(
-            `Testimonial by "${t.name}" status updated to ${nextVisible ? "Visible" : "Hidden"
-            }.`,
-            "success"
-          );
-          return { ...t, visible: nextVisible };
-        }
-        return t;
-      })
-    );
+    try {
+      setLoading(true);
+      await updateTestimonial(id, {
+        name: testimonial.name,
+        message: testimonial.message,
+        visible: nextVisible,
+        is_visible: nextVisible,
+        avatar: testimonial.avatar || "",
+      });
+      showToast(
+        `Testimonial by "${testimonial.name}" status updated to ${nextVisible ? "Visible" : "Hidden"}.`,
+        "success"
+      );
+      fetchTestimonials();
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Failed to update visibility status.";
+      showToast(errMsg, "error");
+    }
   };
 
-  const handleDelete = (id, clientName) => {
-    const testimonial = testimonials.find((t) => t.id === id);
-    if (!testimonial) return;
-
-    if (testimonial.visible) {
-      const visibleCount = testimonials.filter((t) => t.visible).length;
-      if (visibleCount <= 3) {
-        showToast(
-          "Cannot delete this testimonial. At least 3 visible testimonials are required. Please activate another testimonial before deleting this one.",
-          "error"
-        );
-        return;
+  const handleDelete = async (id, clientName) => {
+    if (window.confirm(`Are you sure you want to delete testimonial from "${clientName}"?`)) {
+      try {
+        setLoading(true);
+        await deleteTestimonial(id);
+        showToast(`Testimonial from "${clientName}" deleted successfully.`, "success");
+        fetchTestimonials();
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : "Failed to delete testimonial.";
+        showToast(errMsg, "error");
       }
     }
+  };
 
-    if (
-      window.confirm(
-        `Are you sure you want to delete testimonial from "${clientName}"?`
-      )
-    ) {
-      setTestimonials((prev) => prev.filter((t) => t.id !== id));
-      showToast(`Testimonial from "${clientName}" deleted successfully.`, "success");
-    }
-  };  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!name.trim() || !message.trim()) {
@@ -187,65 +184,54 @@ export default function TestimonialsAdmin() {
 
     const visibleCount = testimonials.filter((t) => t.visible).length;
 
-    if (currentTestimonial) {
-      if (visible !== currentTestimonial.visible) {
-        if (visible) {
-          if (visibleCount >= 3) {
-            showToast(
-              "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
-              "error"
-            );
-            return;
-          }
-        } else {
-          if (visibleCount <= 3) {
-            showToast(
-              "Cannot save. A minimum of 3 visible testimonials is required. Please make another testimonial visible first.",
-              "error"
-            );
-            return;
-          }
-        }
-      }
-
-      setTestimonials((prev) =>
-        prev.map((t) =>
-          t.id === currentTestimonial.id
-            ? {
-                ...t,
-                name: name.trim(),
-                message: message.trim(),
-                visible,
-                avatar: avatarUrl.trim(),
-              }
-            : t
-        )
-      );
-      showToast(`Testimonial from "${name.trim()}" updated successfully.`, "success");
-    } else {
-      if (visible) {
-        if (visibleCount >= 3) {
+    try {
+      setLoading(true);
+      if (currentTestimonial) {
+        const otherVisibleCount = testimonials.filter(
+          (t) => t.visible && t.id !== currentTestimonial.id
+        ).length;
+        if (visible && otherVisibleCount >= 3) {
           showToast(
             "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
             "error"
           );
           return;
         }
+
+        await updateTestimonial(currentTestimonial.id, {
+          name: name.trim(),
+          message: message.trim(),
+          visible,
+          is_visible: visible,
+          avatar: avatarUrl.trim(),
+        });
+        showToast(`Testimonial from "${name.trim()}" updated successfully.`, "success");
+      } else {
+        if (visible && visibleCount >= 3) {
+          showToast(
+            "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
+            "error"
+          );
+          return;
+        }
+
+        await createTestimonial({
+          name: name.trim(),
+          message: message.trim(),
+          visible,
+          is_visible: visible,
+          avatar: avatarUrl.trim(),
+        });
+        showToast(`Testimonial from "${name.trim()}" added successfully.`, "success");
       }
-
-      const newTestimonial = {
-        id: `tst-${Date.now()}`,
-        name: name.trim(),
-        message: message.trim(),
-        visible,
-        avatar: avatarUrl.trim(),
-      };
-      setTestimonials((prev) => [...prev, newTestimonial]);
-      showToast(`Testimonial from "${name.trim()}" added successfully.`, "success");
+      setIsModalOpen(false);
+      fetchTestimonials();
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Failed to save testimonial.";
+      showToast(errMsg, "error");
     }
-
-    setIsModalOpen(false);
   };
+
 
   return (
     <div className="ww-page space-y-6">
@@ -269,7 +255,7 @@ export default function TestimonialsAdmin() {
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-700 leading-relaxed max-w-6xl shadow-sm">
         <Info className="w-5 h-5 shrink-0 text-blue-500 mt-0.5" />
         <div>
-          <span className="font-bold">Important Note:</span> You may add as many testimonials as you like for record-keeping. However, to maintain a balanced layout on the website, <strong>exactly 3 testimonials must remain visible at all times</strong>.
+          <span className="font-bold">Important Note:</span> You may add as many testimonials as you like for record-keeping. However, <strong>exactly 3 testimonials must remain visible at all times</strong>.
         </div>
       </div>
 
@@ -283,7 +269,11 @@ export default function TestimonialsAdmin() {
           <span className="text-right">Actions</span>
         </div>
 
-        {testimonials.length === 0 ? (
+        {loading ? (
+          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm py-12 text-center text-zinc-400 font-bold text-sm flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-[#2B7FFF]" /> Loading testimonials...
+          </div>
+        ) : testimonials.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm py-10 text-center text-zinc-400 font-bold text-sm">
             No testimonials found. Click "Add Testimonial" to create one.
           </div>

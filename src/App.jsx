@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./modules/dashboard/Dashboard";
 import UsersList from "./modules/users/UsersList";
@@ -18,6 +18,18 @@ import "./App.css";
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [globalSearch, setGlobalSearch] = useState("");
+
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.target.tagName === "INPUT" && e.target.type === "number") {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      document.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   const renderActiveView = () => {
     switch (activeTab) {
