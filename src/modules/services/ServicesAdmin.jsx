@@ -1,11 +1,5 @@
 import React, { useState } from "react";
 import {
-  Briefcase,
-  TrendingUp,
-  Sliders,
-  Shield,
-  Heart,
-  DollarSign,
   Plus,
   Edit2,
   Trash2,
@@ -18,39 +12,48 @@ import AdminModal from "../../components/UI/AdminModal";
 import StatusToggle from "../../components/UI/StatusToggle";
 import ExpandableText from "../../components/UI/ExpandableText";
 
-const iconMap = {
-  Briefcase: Briefcase,
-  TrendingUp: TrendingUp,
-  Sliders: Sliders,
-  Shield: Shield,
-  Heart: Heart,
-  DollarSign: DollarSign,
-};
-
 const initialServices = [
   {
     id: "srv-1",
-    title: "Retirement Planning",
+    title: "Financial Health Check",
     description:
-      "Tailored investment and savings plans designed to ensure financial independence during retirement.",
-    iconUrl: "Briefcase",
+      "Get a comprehensive assessment of your financial health by analyzing your income, expenses, savings, investments, liabilities, and overall financial preparedness.",
     active: true,
   },
   {
     id: "srv-2",
-    title: "Tax Optimization",
+    title: "Goal-Based Financial Planning",
     description:
-      "Comprehensive tax planning and structuring to minimize liability and maximize after-tax returns.",
-    iconUrl: "TrendingUp",
+      "Plan for your life goals such as buying a home, children's education, travel, retirement, and wealth creation with a personalized financial roadmap.",
     active: true,
   },
   {
     id: "srv-3",
-    title: "Portfolio Management",
+    title: "Investment & Portfolio Review",
     description:
-      "Discretionary asset management using optimized allocation strategies tailored to risk profiles.",
-    iconUrl: "Sliders",
-    active: false,
+      "Evaluate your existing investments and receive recommendations to build a well-diversified portfolio aligned with your financial goals and risk profile.",
+    active: true,
+  },
+  {
+    id: "srv-4",
+    title: "Insurance & Risk Management",
+    description:
+      "Identify protection gaps and ensure adequate coverage through Term Insurance, Health Insurance, Personal Accident Cover, and Emergency Planning.",
+    active: true,
+  },
+  {
+    id: "srv-5",
+    title: "Retirement Planning",
+    description:
+      "Estimate the retirement corpus required, assess your retirement readiness, and create a strategy for a financially independent retirement.",
+    active: true,
+  },
+  {
+    id: "srv-6",
+    title: "Estate Planning (Will & Trust)",
+    description:
+      "Secure your family's future with proper estate planning, including Wills, Trusts, nominations, and seamless wealth transfer across generations.",
+    active: true,
   },
 ];
 
@@ -64,14 +67,12 @@ export default function ServicesAdmin() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [iconUrl, setIconUrl] = useState("Briefcase");
   const [active, setActive] = useState(true);
 
   const handleOpenAdd = () => {
     setCurrentService(null);
     setTitle("");
     setDescription("");
-    setIconUrl("Briefcase");
     setActive(true);
     setIsModalOpen(true);
   };
@@ -80,7 +81,6 @@ export default function ServicesAdmin() {
     setCurrentService(service);
     setTitle(service.title);
     setDescription(service.description);
-    setIconUrl(service.iconUrl);
     setActive(service.active);
     setIsModalOpen(true);
   };
@@ -129,7 +129,6 @@ export default function ServicesAdmin() {
                 ...s,
                 title: title.trim(),
                 description: description.trim(),
-                iconUrl: iconUrl.trim(),
                 active,
               }
             : s
@@ -141,7 +140,6 @@ export default function ServicesAdmin() {
         id: `srv-${Date.now()}`,
         title: title.trim(),
         description: description.trim(),
-        iconUrl: iconUrl.trim(),
         active,
       };
       setServices((prev) => [...prev, newService]);
@@ -149,14 +147,6 @@ export default function ServicesAdmin() {
     }
 
     setIsModalOpen(false);
-  };
-
-  const renderIcon = (url, size = "w-5 h-5") => {
-    if (url.startsWith("http") || url.startsWith("/")) {
-      return <img src={url} alt="icon" className={`${size} object-contain`} />;
-    }
-    const IconComponent = iconMap[url] || Briefcase;
-    return <IconComponent className={size} strokeWidth={1.5} />;
   };
 
   return (
@@ -180,8 +170,7 @@ export default function ServicesAdmin() {
       {/* Services List — card-based rows for a softer, modern feel */}
       <div className="max-w-6xl space-y-3">
         {/* Column labels (hidden on small screens, cards still stack fine) */}
-        <div className="hidden md:grid grid-cols-[0.6fr_1.4fr_2.4fr_1fr_0.9fr] gap-4 px-6 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-          <span>Icon</span>
+        <div className="hidden md:grid grid-cols-[2fr_2.4fr_1fr_0.9fr] gap-4 px-6 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
           <span>Service Title</span>
           <span>Description</span>
           <span>Status</span>
@@ -196,14 +185,8 @@ export default function ServicesAdmin() {
           services.map((service) => (
             <div
               key={service.id}
-              className="grid grid-cols-1 md:grid-cols-[0.6fr_1.4fr_2.4fr_1fr_0.9fr] gap-4 items-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5 transition-all duration-200 px-6 py-5 font-medium text-zinc-650 text-xs"
+              className="grid grid-cols-1 md:grid-cols-[2fr_2.4fr_1fr_0.9fr] gap-4 items-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5 transition-all duration-200 px-6 py-5 font-medium text-zinc-650 text-xs"
             >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2B7FFF] to-[#2d9c7e] text-white shadow-md shadow-blue-200/50 flex items-center justify-center">
-                  {renderIcon(service.iconUrl)}
-                </div>
-              </div>
-
               <div className="font-bold text-zinc-800 text-xs">{service.title}</div>
 
               <div className="text-zinc-550 leading-relaxed">
@@ -282,22 +265,6 @@ export default function ServicesAdmin() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
-              Icon or Image URL
-            </label>
-            <input
-              type="text"
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              placeholder="Standard key (Briefcase, Sliders, TrendingUp) or http://... image URL"
-              className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white font-medium transition-all"
-            />
-            <span className="block text-[10px] text-zinc-400 mt-1 font-semibold leading-normal">
-              Valid standard key names: Briefcase, TrendingUp, Sliders, Shield, Heart, DollarSign
-            </span>
-          </div>
-
           <div className="flex items-center justify-between border-t border-zinc-100 pt-5">
             <div>
               <span className="block text-xs font-bold text-slate-700 tracking-wide">
@@ -356,7 +323,8 @@ export default function ServicesAdmin() {
               {/* Decorative blurred glow blobs for depth, like a modern SaaS marketing section */}
               <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#2B7FFF]/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
               <div className="absolute -bottom-14 -right-10 w-72 h-72 bg-[#2d9c7e]/12 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />              <div className="relative max-w-sm mx-auto bg-white/70 hover:bg-white/85 backdrop-blur-xl rounded-3xl border border-white/40 shadow-[-4px_-4px_12px_rgba(255,255,255,0.6),4px_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[-6px_-6px_16px_rgba(255,255,255,0.8),6px_6px_28px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col justify-between min-h-[220px]">
+              <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative max-w-sm mx-auto bg-white/70 hover:bg-white/85 backdrop-blur-xl rounded-3xl border border-white/40 shadow-[-4px_-4px_12px_rgba(255,255,255,0.6),4px_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[-6px_-6px_16px_rgba(255,255,255,0.8),6px_6px_28px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col justify-between min-h-[220px]">
                 <div className="pt-3">
                   <h4 className="text-base font-extrabold text-zinc-800">
                     {previewService.title}
@@ -368,9 +336,6 @@ export default function ServicesAdmin() {
 
                 <div className="flex items-center justify-between gap-3 mt-6 pt-5 border-t border-white/30 relative">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2B7FFF] shrink-0 shadow-sm transition-transform hover:scale-105">
-                      {renderIcon(previewService.iconUrl, "w-5 h-5")}
-                    </div>
                     <div>
                       <p className="text-xs font-bold text-zinc-800">
                         Wealth Services
@@ -404,7 +369,7 @@ export default function ServicesAdmin() {
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}
-                className="px-4 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 active:scale-95 text-xs font-bold text-zinc-550 rounded-xl transition-all cursor-pointer shadow-xs"
+                className="px-4 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 active:scale-95 text-xs font-bold text-zinc-555 rounded-xl transition-all cursor-pointer shadow-xs"
               >
                 Close
               </button>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  Star,
+  Info,
   Plus,
   Edit2,
   Trash2,
@@ -20,7 +20,6 @@ const initialTestimonials = [
     id: "tst-1",
     name: "Aaditya Patel",
     message: "The automated assessment builder helped me identify a major gap in my retirement planning. Excellent service!",
-    rating: 5,
     visible: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aaditya",
   },
@@ -28,7 +27,6 @@ const initialTestimonials = [
     id: "tst-2",
     name: "Sarah Jenkins",
     message: "Highly recommended for clear financial analytics and custom rates. The interface is smooth and intuitive.",
-    rating: 4,
     visible: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
   },
@@ -36,8 +34,7 @@ const initialTestimonials = [
     id: "tst-3",
     name: "Michael Chang",
     message: "I appreciate the transparency and structured audits. The team has optimized our portfolio tax liabilities.",
-    rating: 5,
-    visible: false,
+    visible: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
   },
 ];
@@ -91,7 +88,6 @@ export default function TestimonialsAdmin() {
 
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [rating, setRating] = useState(5);
   const [visible, setVisible] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -99,7 +95,6 @@ export default function TestimonialsAdmin() {
     setCurrentTestimonial(null);
     setName("");
     setMessage("");
-    setRating(5);
     setVisible(true);
     setAvatarUrl("");
     setIsModalOpen(true);
@@ -109,7 +104,6 @@ export default function TestimonialsAdmin() {
     setCurrentTestimonial(testimonial);
     setName(testimonial.name);
     setMessage(testimonial.message);
-    setRating(testimonial.rating);
     setVisible(testimonial.visible);
     setAvatarUrl(testimonial.avatar || "");
     setIsModalOpen(true);
@@ -121,6 +115,29 @@ export default function TestimonialsAdmin() {
   };
 
   const handleToggleVisibility = (id) => {
+    const testimonial = testimonials.find((t) => t.id === id);
+    if (!testimonial) return;
+
+    const visibleCount = testimonials.filter((t) => t.visible).length;
+
+    if (testimonial.visible) {
+      if (visibleCount <= 3) {
+        showToast(
+          "Cannot hide this testimonial. A minimum of 3 visible testimonials is required to maintain the website layout.",
+          "error"
+        );
+        return;
+      }
+    } else {
+      if (visibleCount >= 3) {
+        showToast(
+          "Cannot display this testimonial. A maximum of 3 visible testimonials is allowed. Please hide another testimonial first.",
+          "error"
+        );
+        return;
+      }
+    }
+
     setTestimonials((prev) =>
       prev.map((t) => {
         if (t.id === id) {
@@ -138,6 +155,20 @@ export default function TestimonialsAdmin() {
   };
 
   const handleDelete = (id, clientName) => {
+    const testimonial = testimonials.find((t) => t.id === id);
+    if (!testimonial) return;
+
+    if (testimonial.visible) {
+      const visibleCount = testimonials.filter((t) => t.visible).length;
+      if (visibleCount <= 3) {
+        showToast(
+          "Cannot delete this testimonial. At least 3 visible testimonials are required. Please activate another testimonial before deleting this one.",
+          "error"
+        );
+        return;
+      }
+    }
+
     if (
       window.confirm(
         `Are you sure you want to delete testimonial from "${clientName}"?`
@@ -146,9 +177,7 @@ export default function TestimonialsAdmin() {
       setTestimonials((prev) => prev.filter((t) => t.id !== id));
       showToast(`Testimonial from "${clientName}" deleted successfully.`, "success");
     }
-  };
-
-  const handleSubmit = (e) => {
+  };  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!name.trim() || !message.trim()) {
@@ -156,28 +185,58 @@ export default function TestimonialsAdmin() {
       return;
     }
 
+    const visibleCount = testimonials.filter((t) => t.visible).length;
+
     if (currentTestimonial) {
+      if (visible !== currentTestimonial.visible) {
+        if (visible) {
+          if (visibleCount >= 3) {
+            showToast(
+              "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
+              "error"
+            );
+            return;
+          }
+        } else {
+          if (visibleCount <= 3) {
+            showToast(
+              "Cannot save. A minimum of 3 visible testimonials is required. Please make another testimonial visible first.",
+              "error"
+            );
+            return;
+          }
+        }
+      }
+
       setTestimonials((prev) =>
         prev.map((t) =>
           t.id === currentTestimonial.id
             ? {
-              ...t,
-              name: name.trim(),
-              message: message.trim(),
-              rating,
-              visible,
-              avatar: avatarUrl.trim(),
-            }
+                ...t,
+                name: name.trim(),
+                message: message.trim(),
+                visible,
+                avatar: avatarUrl.trim(),
+              }
             : t
         )
       );
       showToast(`Testimonial from "${name.trim()}" updated successfully.`, "success");
     } else {
+      if (visible) {
+        if (visibleCount >= 3) {
+          showToast(
+            "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
+            "error"
+          );
+          return;
+        }
+      }
+
       const newTestimonial = {
         id: `tst-${Date.now()}`,
         name: name.trim(),
         message: message.trim(),
-        rating,
         visible,
         avatar: avatarUrl.trim(),
       };
@@ -187,20 +246,6 @@ export default function TestimonialsAdmin() {
 
     setIsModalOpen(false);
   };
-
-  const renderStars = (numStars, size = "w-3.5 h-3.5") => (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`${size} ${star <= numStars
-              ? "text-amber-400 fill-amber-400"
-              : "text-zinc-200 fill-zinc-200"
-            }`}
-        />
-      ))}
-    </div>
-  );
 
   return (
     <div className="ww-page space-y-6">
@@ -220,13 +265,20 @@ export default function TestimonialsAdmin() {
         </button>
       </div>
 
+      {/* Informational Banner */}
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-700 leading-relaxed max-w-6xl shadow-sm">
+        <Info className="w-5 h-5 shrink-0 text-blue-500 mt-0.5" />
+        <div>
+          <span className="font-bold">Important Note:</span> You may add as many testimonials as you like for record-keeping. However, to maintain a balanced layout on the website, <strong>exactly 3 testimonials must remain visible at all times</strong>.
+        </div>
+      </div>
+
       {/* Testimonials List — card-based rows for a softer, modern feel */}
       <div className="max-w-6xl space-y-3">
         {/* Column labels (hidden on small screens, cards still stack fine) */}
-        <div className="hidden md:grid grid-cols-[1.6fr_2.4fr_0.8fr_1fr_0.9fr] gap-4 px-6 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+        <div className="hidden md:grid grid-cols-[2fr_2.8fr_1.1fr_1fr] gap-4 px-6 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
           <span>Client</span>
           <span>Review Message</span>
-          <span>Rating</span>
           <span>Visibility</span>
           <span className="text-right">Actions</span>
         </div>
@@ -239,7 +291,7 @@ export default function TestimonialsAdmin() {
           testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="grid grid-cols-1 md:grid-cols-[1.6fr_2.4fr_0.8fr_1fr_0.9fr] gap-4 items-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5 transition-all duration-200 px-6 py-5 font-medium text-zinc-650 text-xs"
+              className="grid grid-cols-1 md:grid-cols-[2fr_2.8fr_1.1fr_1fr] gap-4 items-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5 transition-all duration-200 px-6 py-5 font-medium text-zinc-650 text-xs"
             >
               <div className="flex items-center gap-3">
                 <TestimonialAvatar testimonial={testimonial} className="w-9 h-9" />
@@ -248,11 +300,9 @@ export default function TestimonialsAdmin() {
                 </span>
               </div>
 
-              <div className="text-zinc-550 leading-relaxed">
+              <div className="text-zinc-555 leading-relaxed">
                 <ExpandableText text={testimonial.message} maxLength={80} />
               </div>
-
-              <div>{renderStars(testimonial.rating)}</div>
 
               <div>
                 <StatusToggle
@@ -353,30 +403,6 @@ export default function TestimonialsAdmin() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
-              Rating <span className="text-rose-500 font-bold">*</span>
-            </label>
-            <div className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 w-fit">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  className="cursor-pointer transition-transform hover:scale-125 focus:outline-none"
-                >
-                  <Star
-                    className={`w-6 h-6 ${star <= rating
-                        ? "text-amber-400 fill-amber-400"
-                        : "text-zinc-350 fill-none hover:text-amber-300"
-                      }`}
-                  />
-                </button>
-              ))}
-              <span className="text-xs font-bold text-zinc-500 ml-2">{rating} / 5</span>
-            </div>
-          </div>
-
           <div className="flex items-center justify-between border-t border-zinc-100 pt-5">
             <div>
               <span className="block text-xs font-bold text-slate-700 tracking-wide">
@@ -443,7 +469,6 @@ export default function TestimonialsAdmin() {
                 </div>
 
                 <div className="pt-3">
-                  {renderStars(previewTestimonial.rating, "w-4 h-4")}
                   <p className="text-sm text-zinc-700 leading-relaxed mt-4 font-medium">
                     "{previewTestimonial.message}"
                   </p>
@@ -484,7 +509,7 @@ export default function TestimonialsAdmin() {
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}
-                className="px-4 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 active:scale-95 text-xs font-bold text-zinc-550 rounded-xl transition-all cursor-pointer shadow-xs"
+                className="px-4 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 active:scale-95 text-xs font-bold text-zinc-555 rounded-xl transition-all cursor-pointer shadow-xs"
               >
                 Close
               </button>
