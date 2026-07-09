@@ -24,7 +24,7 @@ export default function App() {
       case "dashboard":
         return <Dashboard />;
       case "users":
-        return <UsersList />;
+        return <UsersList globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} />;
       case "builder":
         return (
           <AssessmentProvider>

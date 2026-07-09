@@ -12,7 +12,7 @@ const parseUtcDate = (dateStr) => {
   return new Date(s);
 };
 
-export default function Navbar({ activeTab, globalSearch, setGlobalSearch, isMobileOpen, setIsMobileOpen }) {
+export default function Navbar({ activeTab, setActiveTab, globalSearch, setGlobalSearch, isMobileOpen, setIsMobileOpen }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -149,7 +149,12 @@ export default function Navbar({ activeTab, globalSearch, setGlobalSearch, isMob
           type="text"
           placeholder="Search insights, assessments, reports..."
           value={globalSearch}
-          onChange={(e) => setGlobalSearch(e.target.value)}
+          onChange={(e) => {
+            setGlobalSearch(e.target.value);
+            if (activeTab !== "users") {
+              setActiveTab("users");
+            }
+          }}
           className="bg-transparent border-none text-xs text-zinc-700 outline-none w-full placeholder-slate-400"
         />
       </div>

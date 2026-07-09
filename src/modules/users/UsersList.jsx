@@ -12,11 +12,15 @@ import {
 import { downloadAdminReport } from "../../services/reportService";
 import { useToast } from "../../components/UI/Toast";
 
-export default function UsersList() {
+export default function UsersList({ globalSearch = "", setGlobalSearch = () => {} }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(globalSearch);
+
+  useEffect(() => {
+    setSearch(globalSearch);
+  }, [globalSearch]);
   const [statusFilter, setStatusFilter] = useState("All"); // All, Leads, Completed
   const [showFreeLeadsOnly, setShowFreeLeadsOnly] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -307,7 +311,10 @@ export default function UsersList() {
             type="text"
             placeholder="Filter by name, email, phone..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setGlobalSearch(e.target.value);
+            }}
             className="bg-transparent border-none text-xs text-zinc-700 outline-none w-full placeholder-slate-400"
           />
         </div>

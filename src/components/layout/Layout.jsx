@@ -31,6 +31,7 @@ export default function Layout({ activeTab, setActiveTab, globalSearch, setGloba
         {/* Navbar */}
         <Navbar
           activeTab={activeTab}
+          setActiveTab={setActiveTab}
           globalSearch={globalSearch}
           setGlobalSearch={setGlobalSearch}
           isMobileOpen={isMobileOpen}
