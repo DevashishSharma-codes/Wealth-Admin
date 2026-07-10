@@ -436,10 +436,19 @@ export default function AssessmentProvider({ children }) {
 
       // 3. Generate PDF Report in background
       try {
+        console.log("[submitStep5] Triggering reportService.generateReport for currentId:", currentId);
         const reportRes = await reportService.generateReport(currentId);
+        console.log("[submitStep5] generateReport response:", reportRes);
         const reportData = reportRes.data || reportRes;
-        if (reportData && reportData.job_id) {
-          const jobId = reportData.job_id;
+        console.log("[submitStep5] reportData:", reportData);
+        
+        if (reportData && (reportData.report_id || (reportData.data && reportData.data.report_id))) {
+          const finalReportId = reportData.report_id || reportData.data.report_id;
+          console.log("[submitStep5] Report generated synchronously. Setting reportId directly to:", finalReportId);
+          setReportId(finalReportId);
+        } else if (reportData && (reportData.job_id || (reportData.data && reportData.data.job_id))) {
+          const jobId = reportData.job_id || reportData.data.job_id;
+          console.log("[submitStep5] Polling job ID:", jobId);
           
           // Poll async
           (async () => {
@@ -451,23 +460,40 @@ export default function AssessmentProvider({ children }) {
               await new Promise((resolve) => setTimeout(resolve, 1000));
               checkCount++;
               try {
+                console.log(`[polling] Check #${checkCount} status for jobId: ${jobId}`);
                 const statusRes = await reportService.checkReportStatus(currentId, jobId);
+                console.log(`[polling] Check #${checkCount} raw statusRes:`, statusRes);
                 const statusData = statusRes.data || statusRes;
-                if (statusRes.status === "success" && statusData.status === "completed") {
-                  setReportId(statusData.report_id || statusData.id);
+                console.log(`[polling] Check #${checkCount} statusData:`, statusData);
+                
+                const currentJobStatus = statusData.status || statusRes.status;
+                
+                if (currentJobStatus === "completed" || currentJobStatus === "success") {
+                  const finalReportId = statusData.report_id || statusData.id || statusRes.report_id || statusRes.id;
+                  console.log(`[polling] Report generation completed! Setting reportId to:`, finalReportId);
+                  setReportId(finalReportId);
                   reportDone = true;
-                } else if (statusRes.status === "failed") {
-                  console.error("Report PDF failed.");
+                } else if (currentJobStatus === "failed") {
+                  console.error("[polling] Report generation failed on backend.");
+                  showToast("Report PDF generation failed on server.", "error");
                   break;
                 }
               } catch (pollErr) {
-                console.error("Error checking report status:", pollErr);
+                console.error("[polling] Error in polling check:", pollErr);
               }
             }
+            if (!reportDone) {
+              console.warn("[polling] Polling finished or timed out without report completion.");
+              showToast("PDF report generation timed out. Please try again.", "warning");
+            }
           })();
+        } else {
+          console.warn("[submitStep5] Missing report_id or job_id in report response:", reportData);
+          showToast("Failed to retrieve generated PDF report.", "error");
         }
       } catch (reportErr) {
         console.error("Failed to generate PDF:", reportErr);
+        showToast("Error generating PDF: " + reportErr.message, "error");
       }
     } catch (err) {
       console.error(err);
@@ -478,28 +504,21 @@ export default function AssessmentProvider({ children }) {
   };
 
   const downloadReport = async () => {
-    if (!assessmentId) {
-      showToast("Assessment ID is missing.", "error");
+    if (!reportId) {
+      showToast("Report ID is missing or report is still generating.", "error");
       return;
     }
     try {
-      const reportBlob = await reportService.downloadClientReport(assessmentId);
-      if (reportBlob.type === "application/json") {
-        const text = await reportBlob.text();
-        const resJson = JSON.parse(text);
-        showToast(resJson.message || "Report sent to email successfully.", "success");
-        logAction(`Sent client report email for assessment ID: ${assessmentId}`);
-      } else {
-        const downloadUrl = URL.createObjectURL(reportBlob);
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = `report-${assessmentId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        showToast("Report PDF downloaded successfully.", "success");
-        logAction(`Downloaded client report PDF for assessment ID: ${assessmentId}`);
-      }
+      const { blob, fileName } = await reportService.downloadAdminReportWithFilename(reportId);
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast("Report PDF downloaded successfully.", "success");
+      logAction(`Downloaded client report PDF for report ID: ${reportId}`);
     } catch (error) {
       console.error("PDF download failed:", error);
       showToast(error.message || "Failed to download PDF report. Please try again.", "error");

@@ -7,12 +7,16 @@ import api from "../config/api";
  * @param {string} body - Email body content (HTML or plain text)
  * @param {Array<File>} files - Campaign file attachments
  */
-export const sendCampaign = (subject, body, files) => {
+export const sendCampaign = (subject, body, files, recipients = "") => {
   const formData = new FormData();
   formData.append("subject", subject);
   formData.append("body", body);
+  formData.append("body_format", "html");
+  if (recipients && recipients.trim()) {
+    formData.append("recipients", recipients);
+  }
   files.forEach((file) => {
-    formData.append("attachments", file);
+    formData.append("files", file);
   });
 
   return api.post("/admin/marketing/campaign", formData, {

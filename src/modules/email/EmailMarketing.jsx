@@ -1,7 +1,185 @@
 import { useState, useRef, useEffect } from "react";
-import { Mail, Eye, Send, Paperclip, Bold, Italic, List, Link, X, AlertTriangle, FileText } from "lucide-react";
+import {
+  Mail,
+  Eye,
+  Send,
+  Paperclip,
+  Bold,
+  Italic,
+  List,
+  Link,
+  X,
+  AlertTriangle,
+  FileText,
+  ChevronDown,
+  Search,
+  Copy,
+  Check,
+  Users,
+} from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import { sendCampaign, getRecipients } from "../../services/marketingService";
+
+/**
+ * Floating recipients control.
+ * Renders as an interactive pill that opens an anchored dropdown panel —
+ * never shifts surrounding layout, closes on outside click / Escape.
+ */
+function RecipientsDropdown({ recipients, count }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [copied, setCopied] = useState(false);
+  const wrapperRef = useRef(null);
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    function handleEscape(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      // Focus the filter input on open, once it's mounted
+      const t = setTimeout(() => searchRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
+  const filtered = query
+    ? recipients.filter((email) => email.toLowerCase().includes(query.toLowerCase()))
+    : recipients;
+
+  const handleCopyAll = async () => {
+    if (recipients.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(recipients.join(", "));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.warn("Failed to copy recipients:", err);
+    }
+  };
+
+  if (count === null) return null;
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className={`flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#2B7FFF]/30 ${open
+            ? "bg-[#2B7FFF]/10 border-[#2B7FFF]/30 text-[#2B7FFF]"
+            : "bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100"
+          }`}
+      >
+        <Users className="w-3 h-3" />
+        <span>
+          {count} Recipient{count === 1 ? "" : "s"}
+        </span>
+        <ChevronDown
+          className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          className="absolute right-0 top-[calc(100%+8px)] w-80 bg-white border border-zinc-200 rounded-xl shadow-lg shadow-zinc-900/10 z-50 overflow-hidden animate-fade-in"
+        >
+          {/* Header */}
+          <div className="px-3.5 py-3 border-b border-zinc-100 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-zinc-800">Consented recipients</p>
+              <p className="text-[9px] text-zinc-400 font-semibold mt-0.5">
+                This campaign will be sent to everyone below
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyAll}
+              disabled={recipients.length === 0}
+              className="shrink-0 flex items-center gap-1 text-[9px] font-bold text-zinc-500 hover:text-[#2B7FFF] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Copy all emails"
+            >
+              {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+              {copied ? "Copied" : "Copy all"}
+            </button>
+          </div>
+
+          {/* Filter — only worth showing once the list has enough to search */}
+          {recipients.length > 5 && (
+            <div className="px-3 pt-2.5 pb-2 border-b border-zinc-100">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-zinc-350 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter recipients..."
+                  className="w-full text-[11px] bg-zinc-50 border border-zinc-200 rounded-lg pl-8 pr-2.5 py-1.5 outline-none focus:border-[#2B7FFF] font-medium text-zinc-700"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* List */}
+          <div className="max-h-[220px] overflow-y-auto py-1">
+            {recipients.length === 0 ? (
+              <div className="px-3.5 py-6 text-center">
+                <p className="text-[10px] font-semibold text-zinc-400">
+                  No consented recipients yet. New opt-ins will appear here automatically.
+                </p>
+              </div>
+            ) : filtered.length > 0 ? (
+              filtered.map((email, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-zinc-50 transition-colors"
+                >
+                  <div className="w-6 h-6 rounded-full bg-[#8EC5FF]/25 text-[#2B7FFF] text-[9px] font-extrabold flex items-center justify-center shrink-0 uppercase">
+                    {email.slice(0, 2)}
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-700 truncate">{email}</span>
+                </div>
+              ))
+            ) : (
+              <div className="px-3.5 py-6 text-center">
+                <p className="text-[10px] font-semibold text-zinc-400">
+                  No recipients match &ldquo;{query}&rdquo;
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          {recipients.length > 0 && (
+            <div className="px-3.5 py-2 border-t border-zinc-100 bg-zinc-50/60">
+              <p className="text-[9px] font-bold text-zinc-400">
+                Showing {filtered.length} of {recipients.length}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function EmailMarketing() {
   const [subject, setSubject] = useState("");
@@ -11,6 +189,8 @@ export default function EmailMarketing() {
   const { showToast } = useToast();
   const [attachmentError, setAttachmentError] = useState(null);
   const [recipientsCount, setRecipientsCount] = useState(null);
+  const [recipients, setRecipients] = useState("");
+  const [recipientsList, setRecipientsList] = useState([]);
 
   // Tracks active text styles at user's cursor position
   const [activeStyles, setActiveStyles] = useState({
@@ -32,13 +212,10 @@ export default function EmailMarketing() {
   useEffect(() => {
     getRecipients()
       .then((res) => {
-        const list = res.data || res;
-        if (Array.isArray(list)) {
-          setRecipientsCount(list.length);
-        } else if (list && typeof list === "object") {
-          const values = Object.values(list);
-          const arr = values.find(Array.isArray);
-          if (arr) setRecipientsCount(arr.length);
+        const payload = res?.data || res;
+        if (payload) {
+          setRecipientsCount(payload.count ?? payload.recipients?.length ?? 0);
+          setRecipientsList(payload.recipients || []);
         }
       })
       .catch((err) => {
@@ -101,10 +278,11 @@ export default function EmailMarketing() {
     }
     setSending(true);
     try {
-      await sendCampaign(subject, emailBody, attachments);
+      await sendCampaign(subject, emailBody, attachments, recipients);
       showToast(`Email campaign dispatched successfully.`, "success");
       setSubject("");
       setEmailBody("");
+      setRecipients("");
       if (editorRef.current) {
         editorRef.current.innerHTML = "";
       }
@@ -145,7 +323,6 @@ export default function EmailMarketing() {
 
   return (
     <div className="ww-page">
-
       {/* Page Header */}
       <div className="ww-page-header">
         <div>
@@ -162,11 +339,7 @@ export default function EmailMarketing() {
               <Mail className="w-4 h-4 text-[#2B7FFF]" />
               <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Email Composer</span>
             </div>
-            {recipientsCount !== null && (
-              <span className="bg-[#2B7FFF]/10 text-[#2B7FFF] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
-                Targeting {recipientsCount} Recipients
-              </span>
-            )}
+            <RecipientsDropdown recipients={recipientsList} count={recipientsCount} />
           </div>
 
           <form onSubmit={handleSend} className="space-y-4">
@@ -185,22 +358,35 @@ export default function EmailMarketing() {
               />
             </div>
 
+            {/* Custom Recipients Input */}
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                Recipients (Optional - Comma-separated list of emails, or leave blank to target all consented users)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. user1@example.com, user2@example.com"
+                value={recipients}
+                onChange={(e) => setRecipients(e.target.value)}
+                className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium font-sans"
+              />
+            </div>
+
             {/* Rich text tool bar */}
             <div>
               <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
                 Email Content Body
               </label>
-              
+
               {/* Tool bar */}
               <div className="flex border border-b-0 border-zinc-200 rounded-t-xl bg-zinc-50 px-2 py-1.5 gap-1.5 shrink-0 items-center">
                 <button
                   type="button"
                   onClick={() => formatText("bold")}
-                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                    activeStyles.bold
+                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${activeStyles.bold
                       ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
                       : "hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800"
-                  }`}
+                    }`}
                   title="Bold text"
                 >
                   <Bold className="w-4 h-4" />
@@ -208,11 +394,10 @@ export default function EmailMarketing() {
                 <button
                   type="button"
                   onClick={() => formatText("italic")}
-                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                    activeStyles.italic
+                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${activeStyles.italic
                       ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
                       : "hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800"
-                  }`}
+                    }`}
                   title="Italic text"
                 >
                   <Italic className="w-4 h-4" />
@@ -220,11 +405,10 @@ export default function EmailMarketing() {
                 <button
                   type="button"
                   onClick={() => formatText("list")}
-                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                    activeStyles.list
+                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${activeStyles.list
                       ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
                       : "hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800"
-                  }`}
+                    }`}
                   title="List bullets"
                 >
                   <List className="w-4 h-4" />
@@ -232,11 +416,10 @@ export default function EmailMarketing() {
                 <button
                   type="button"
                   onClick={() => formatText("link")}
-                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${
-                    activeStyles.link
+                  className={`p-1.5 rounded-md cursor-pointer transition-colors ${activeStyles.link
                       ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
                       : "hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800"
-                  }`}
+                    }`}
                   title="Add web links"
                 >
                   <Link className="w-4 h-4" />
@@ -254,7 +437,7 @@ export default function EmailMarketing() {
                 placeholder="Write your email body copy here..."
                 style={{
                   whiteSpace: "pre-wrap",
-                  fontFamily: "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+                  fontFamily: "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 }}
               />
             </div>

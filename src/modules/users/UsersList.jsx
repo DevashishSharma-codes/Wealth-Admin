@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet } from "lucide-react";
+import { Search, X, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet, FileText } from "lucide-react";
+
+const getDisplayVal = (val) => {
+  if (!val) return "N/A";
+  if (typeof val === "object") {
+    return val.display || val.inr || (val.raw !== undefined ? val.raw.toLocaleString("en-IN") : "N/A");
+  }
+  return typeof val === "number" ? val.toLocaleString("en-IN") : val;
+};
 import { 
   getAdminUsers, 
   getAdminLeads, 
@@ -149,6 +157,10 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       const resData = response.data || response;
       const assessmentData = resData.data || resData;
 
+      console.log("[handleViewDetails] RAW response:", response);
+      console.log("[handleViewDetails] resData:", resData);
+      console.log("[handleViewDetails] assessmentData:", assessmentData);
+
       const detailedUser = {
         id: assessmentData.assessment_id || user.id,
         name: assessmentData.flow2?.client_name || user.name || "Anonymous Client",
@@ -196,6 +208,8 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
           progress: g.monthly_sip ? 100 : 0,
         })),
 
+        calculation: assessmentData.calculation || null,
+        reports: assessmentData.reports || [],
         activities: user.activities || [],
       };
 
@@ -848,6 +862,157 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                   </div>
                 </div>
               )}
+
+              {/* Calculation Summary Card */}
+              {selectedUser.calculation ? (
+                <div className="bg-white border border-zinc-200/60 p-5 rounded-xl space-y-4 animate-fade-in">
+                  <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
+                    <Award className="w-4 h-4" /> Calculation Summary
+                  </h4>
+
+                  {/* Summary Metric Grid */}
+                  <div className="grid grid-cols-3 gap-3 bg-zinc-50/50 p-3 rounded-xl border border-zinc-200">
+                    <div className="text-center">
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase">Net Corpus Target</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {getDisplayVal(selectedUser.calculation.summary?.corpus || selectedUser.calculation.client?.corpus)}
+                      </span>
+                    </div>
+                    <div className="text-center border-x border-zinc-200/80">
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase">Insurance Required</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {getDisplayVal(selectedUser.calculation.summary?.insurance || selectedUser.calculation.insurance?.total_required)}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase">Monthly SIP Target</span>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {getDisplayVal(
+                          selectedUser.calculation.summary?.monthly_sip ||
+                          selectedUser.calculation.summary?.["monthly SIP"] ||
+                          selectedUser.calculation.summary?.monthlySip ||
+                          selectedUser.calculation.client?.monthly_sip
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Client Retirement Projections */}
+                  {selectedUser.calculation.client && (
+                    <div className="space-y-2.5">
+                      <span className="text-[10px] font-bold text-zinc-400 block uppercase">Client Retirement Details</span>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-medium bg-zinc-50/20 p-3 rounded-lg border border-zinc-150">
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Retirement Period</span>
+                          <span className="text-zinc-800 font-bold">{selectedUser.calculation.client.retirement_period} Years</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Years to Retire</span>
+                          <span className="text-zinc-800 font-bold">{selectedUser.calculation.client.years_to_retirement} Years</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Expense Today</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.client.expenses_today_pm)} /mo</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Expense At Retire</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.client.expenses_at_retirement_pm)} /mo</span>
+                        </div>
+                        <div className="flex justify-between pt-0.5">
+                          <span className="text-zinc-400">PF Accumulation</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.client.pf_corpus)}</span>
+                        </div>
+                        <div className="flex justify-between pt-0.5">
+                          <span className="text-zinc-400">Net Corpus Gap</span>
+                          <span className="text-zinc-800 font-bold text-[#E56A1F]">{getDisplayVal(selectedUser.calculation.client.net_corpus)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Spouse Projections */}
+                  {selectedUser.calculation.spouse && (
+                    <div className="space-y-2.5">
+                      <span className="text-[10px] font-bold text-zinc-400 block uppercase">Spouse Retirement Details</span>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-medium bg-zinc-50/20 p-3 rounded-lg border border-zinc-150">
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Retirement Period</span>
+                          <span className="text-zinc-800 font-bold">{selectedUser.calculation.spouse.retirement_period} Years</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Years to Retire</span>
+                          <span className="text-zinc-800 font-bold">{selectedUser.calculation.spouse.years_to_retirement} Years</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Expense Today</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.spouse.expenses_today_pm)} /mo</span>
+                        </div>
+                        <div className="flex justify-between border-b border-zinc-100/50 pb-1.5">
+                          <span className="text-zinc-400">Expense At Retire</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.spouse.expenses_at_retirement_pm)} /mo</span>
+                        </div>
+                        <div className="flex justify-between pt-0.5">
+                          <span className="text-zinc-400">PF Accumulation</span>
+                          <span className="text-zinc-800 font-bold">{getDisplayVal(selectedUser.calculation.spouse.pf_corpus)}</span>
+                        </div>
+                        <div className="flex justify-between pt-0.5">
+                          <span className="text-zinc-400">Net Corpus Gap</span>
+                          <span className="text-zinc-800 font-bold text-[#E56A1F]">{getDisplayVal(selectedUser.calculation.spouse.net_corpus)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white border border-zinc-200/60 p-5 rounded-xl text-center text-xs text-zinc-400">
+                  <Award className="w-5 h-5 mx-auto mb-1 text-zinc-300" />
+                  Retirement calculations have not been run for this assessment.
+                </div>
+              )}
+
+              {/* Reports generated logs list */}
+              {selectedUser.reports && selectedUser.reports.length > 0 ? (
+                <div className="bg-white border border-zinc-200/60 p-5 rounded-xl space-y-4">
+                  <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
+                    <FileText className="w-4 h-4" /> Generated Assessment Reports ({selectedUser.reports.length})
+                  </h4>
+
+                  <div className="space-y-2">
+                    {selectedUser.reports.map((report, idx) => (
+                      <div key={idx} className="p-3 bg-zinc-50/50 rounded-xl border border-zinc-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-zinc-700 truncate block" title={report.file_name || "report.pdf"}>
+                              {report.file_name || `report-${report.report_id || report.id || idx}.pdf`}
+                            </span>
+                            {report.triggered_by && (
+                              <span className="bg-zinc-200/60 text-zinc-500 font-bold px-1.5 py-0.5 rounded text-[8px] uppercase select-none">
+                                {report.triggered_by}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-zinc-400 font-semibold block">
+                            Generated: {report.generated_at ? new Date(report.generated_at).toLocaleString("en-IN") : "N/A"}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => downloadReportFile(report.report_id || report.id)}
+                          disabled={downloadingReportId === (report.report_id || report.id)}
+                          className="px-2.5 py-1.5 bg-[#2B7FFF]/10 border border-[#2B7FFF]/20 hover:bg-[#2B7FFF]/20 rounded-lg text-[10px] font-bold text-[#2B7FFF] hover:text-[#2B7FFF]/80 cursor-pointer transition-all flex items-center gap-1 shrink-0"
+                        >
+                          {downloadingReportId === (report.report_id || report.id) ? (
+                            <Loader2 className="w-3 animate-spin" />
+                          ) : (
+                            <Download className="w-3 h-3" />
+                          )}
+                          Download
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               {/* Log Activity Changes */}
               <div className="bg-white border border-zinc-200/60 p-5 rounded-xl space-y-4">

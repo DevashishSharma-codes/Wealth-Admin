@@ -4,14 +4,15 @@ import { MetricCards } from "./MetricCards";
 import { RetirementTable } from "./RetirementTable";
 import { GoalsTable } from "./GoalsTable";
 import { InsuranceTable } from "./InsuranceTable";
-import { Download, RotateCcw, CheckCircle } from "lucide-react";
+import { Download, RotateCcw, CheckCircle, Loader2 } from "lucide-react";
 
 export function ReportView() {
   const {
     calculationResult,
     formData,
     downloadReport,
-    resetAssessment
+    resetAssessment,
+    reportId
   } = useAssessment();
 
   if (!calculationResult) return null;
@@ -43,9 +44,15 @@ export function ReportView() {
         <div className="flex gap-2">
           <button
             onClick={downloadReport}
-            className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-[#2B7FFF] rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-xs transition-colors"
+            disabled={!reportId}
+            className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed text-[#2B7FFF] rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-xs transition-colors"
           >
-            <Download className="w-4 h-4" /> Download PDF Report
+            {!reportId ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {!reportId ? "Generating PDF..." : "Download PDF Report"}
           </button>
           <button
             onClick={resetAssessment}
