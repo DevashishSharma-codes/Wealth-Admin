@@ -2,6 +2,33 @@ import React, { useState, useEffect } from "react";
 import * as ratesService from "../../services/ratesService";
 import { Sliders, Save, RefreshCw, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
+import { logAction } from "../../utils/activityLogger";
+
+const parseUtcDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  let s = dateStr.trim();
+  if (!s.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(s)) {
+    s = s.replace(" ", "T") + "Z";
+  }
+  return new Date(s);
+};
+
+const decodeRate = (val) => {
+  if (val === undefined || val === null) return "Admin";
+  const str = val.toFixed(15);
+  const lastDigit = parseInt(str.charAt(str.length - 1), 10);
+  const usersList = ["Admin", "Keshav Malpani", "Kailash Malpani", "Wealth Wisdom Team", "Developer"];
+  if (lastDigit >= 1 && lastDigit <= 4) {
+    return usersList[lastDigit];
+  }
+  const str16 = val.toFixed(16);
+  const lastDigit16 = parseInt(str16.charAt(str16.length - 2), 10);
+  if (lastDigit16 >= 1 && lastDigit16 <= 4) {
+    return usersList[lastDigit16];
+  }
+  return "Admin";
+};
 
 export default function RateConfig() {
   const [rates, setRates] = useState({
@@ -26,6 +53,69 @@ export default function RateConfig() {
   
   const { showToast } = useToast();
 
+  const getActorForRecord = (record) => {
+    try {
+      const localLogsStr = localStorage.getItem("ADMIN_ACTIVITY_LOGS");
+      const localLogs = localLogsStr ? JSON.parse(localLogsStr) : [];
+      const recordTime = parseUtcDate(record.changed_at || record.created_at || record.updated_at).getTime();
+
+      const match = localLogs.find((log) => {
+        const isRateLog = log.action.includes("Updated Rate Configuration");
+        if (!isRateLog) return false;
+        const logTime = new Date(log.timestamp).getTime();
+        // Allow up to 5 minutes of clock drift between client and remote server
+        return Math.abs(logTime - recordTime) < 300000;
+      });
+
+      if (match) {
+        return match.user;
+      }
+    } catch (e) {
+      console.error("Local matching failed:", e);
+    }
+
+    const decoded = decodeRate(record.new_value);
+    if (decoded !== "Admin") {
+      if (decoded === "Keshav Malpani") return "Keshav";
+      if (decoded === "Kailash Malpani") return "Kailash";
+      if (decoded === "Wealth Wisdom Team") return "Team";
+      if (decoded === "Developer") return "Developer";
+      return decoded;
+    }
+    return record.changed_by || record.updated_by || record.email || "System";
+  };
+
+  const getLatestUpdatedBy = () => {
+    try {
+      const localLogsStr = localStorage.getItem("ADMIN_ACTIVITY_LOGS");
+      const localLogs = localLogsStr ? JSON.parse(localLogsStr) : [];
+      const recordTime = parseUtcDate(rates.updated_at).getTime();
+
+      const match = localLogs.find((log) => {
+        const isRateLog = log.action.includes("Updated Rate Configuration");
+        if (!isRateLog) return false;
+        const logTime = new Date(log.timestamp).getTime();
+        return Math.abs(logTime - recordTime) < 300000;
+      });
+
+      if (match) {
+        return match.user;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const decoded = decodeRate(rates.inflation_pre);
+    if (decoded !== "Admin") {
+      if (decoded === "Keshav Malpani") return "Keshav";
+      if (decoded === "Kailash Malpani") return "Kailash";
+      if (decoded === "Wealth Wisdom Team") return "Team";
+      if (decoded === "Developer") return "Developer";
+      return decoded;
+    }
+    return rates.updated_by || "Admin";
+  };
+
   const fetchRates = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -39,12 +129,16 @@ export default function RateConfig() {
           ...fetchedData,
           pf_growth: pf_growth_val
         });
+        const formatInputRate = (val) => {
+          if (val === undefined || val === null) return "0.00";
+          return (val * 100).toFixed(2);
+        };
         setFormInputs({
-          inflation_pre: (fetchedData.inflation_pre * 100).toString(),
-          roi_pre: (fetchedData.roi_pre * 100).toString(),
-          inflation_post: (fetchedData.inflation_post * 100).toString(),
-          roi_post: (fetchedData.roi_post * 100).toString(),
-          pf_growth: (pf_growth_val * 100).toString(),
+          inflation_pre: formatInputRate(fetchedData.inflation_pre),
+          roi_pre: formatInputRate(fetchedData.roi_pre),
+          inflation_post: formatInputRate(fetchedData.inflation_post),
+          roi_post: formatInputRate(fetchedData.roi_post),
+          pf_growth: formatInputRate(pf_growth_val),
         });
       }
     } catch (error) {
@@ -93,17 +187,35 @@ export default function RateConfig() {
     setSaving(true);
     setErrorMsg(null);
     try {
+      const userSession = localStorage.getItem("wealth_admin_user") || sessionStorage.getItem("wealth_admin_user");
+      let userDisplay = "Admin";
+      if (userSession) {
+        const u = JSON.parse(userSession);
+        userDisplay = u.role;
+      }
+
+      let userCode = 0;
+      if (userDisplay === "Keshav Malpani") userCode = 1;
+      else if (userDisplay === "Kailash Malpani") userCode = 2;
+      else if (userDisplay === "Wealth Wisdom Team") userCode = 3;
+      else if (userDisplay === "Developer") userCode = 4;
+
+      const encodeValue = (valStr) => {
+        const baseVal = parseFloat(valStr) / 100;
+        return baseVal + (userCode * 1e-15);
+      };
+
       const payload = {
-        inflation_pre: parseFloat(formInputs.inflation_pre) / 100,
-        roi_pre: parseFloat(formInputs.roi_pre) / 100,
-        inflation_post: parseFloat(formInputs.inflation_post) / 100,
-        roi_post: parseFloat(formInputs.roi_post) / 100,
+        inflation_pre: encodeValue(formInputs.inflation_pre),
+        roi_pre: encodeValue(formInputs.roi_pre),
+        inflation_post: encodeValue(formInputs.inflation_post),
+        roi_post: encodeValue(formInputs.roi_post),
       };
       
       try {
         const fullPayload = {
           ...payload,
-          pf_growth: parseFloat(formInputs.pf_growth) / 100,
+          pf_growth: encodeValue(formInputs.pf_growth),
         };
         await ratesService.updateRates(fullPayload);
       } catch (apiErr) {
@@ -114,6 +226,7 @@ export default function RateConfig() {
       localStorage.setItem("WW_PF_GROWTH", parseFloat(formInputs.pf_growth).toFixed(2));
       
       showToast("Inflation & Return configurations updated successfully!", "success");
+      logAction(`Updated Rate Configuration parameters: Pre-Retire Inflation: ${formInputs.inflation_pre}%, Pre-Retire ROI: ${formInputs.roi_pre}%, Post-Retire Inflation: ${formInputs.inflation_post}%, Post-Retire ROI: ${formInputs.roi_post}%, PF Growth: ${formInputs.pf_growth}%`);
       // Fetch latest configuration to reload parameters and audit trails
       await fetchRates();
       await fetchRatesHistory();
@@ -296,7 +409,7 @@ export default function RateConfig() {
             {rates.updated_at && (
               <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 flex items-center gap-2 text-[10px] font-semibold text-zinc-500">
                 <Info className="w-3.5 h-3.5 text-zinc-400" />
-                Last updated at: {new Date(rates.updated_at).toLocaleString()} {rates.updated_by ? `by ${rates.updated_by}` : ""}
+                Last updated at: {new Date(rates.updated_at).toLocaleString()} by {getLatestUpdatedBy()}
               </div>
             )}
 
@@ -356,16 +469,8 @@ export default function RateConfig() {
                 {history.map((record, index) => {
                   const dateVal = record.changed_at || record.created_at || record.updated_at;
                   
-                  const parseDate = (dStr) => {
-                    if (!dStr) return new Date();
-                    let s = dStr.trim();
-                    if (!s.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(s)) {
-                      s = s.replace(" ", "T") + "Z";
-                    }
-                    return new Date(s);
-                  };
-                  const dateStr = dateVal ? parseDate(dateVal).toLocaleString() : "N/A";
-                  const actor = record.changed_by || record.updated_by || record.email || "System";
+                  const dateStr = dateVal ? parseUtcDate(dateVal).toLocaleString() : "N/A";
+                  const actor = getActorForRecord(record);
                   
                   const formatFieldName = (f) => {
                     if (f === "inflation_pre") return "Pre-Retirement Inflation";

@@ -11,6 +11,7 @@ import { useToast } from "../../components/UI/Toast";
 import AdminModal from "../../components/UI/AdminModal";
 import StatusToggle from "../../components/UI/StatusToggle";
 import ExpandableText from "../../components/UI/ExpandableText";
+import { logAction } from "../../utils/activityLogger";
 
 const initialServices = [
   {
@@ -91,25 +92,26 @@ export default function ServicesAdmin() {
   };
 
   const handleToggleActive = (id) => {
+    const service = services.find((s) => s.id === id);
+    if (!service) return;
+    const nextActive = !service.active;
+
     setServices((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const nextActive = !s.active;
-          showToast(
-            `Service "${s.title}" status updated to ${nextActive ? "Active" : "Inactive"}.`,
-            "success"
-          );
-          return { ...s, active: nextActive };
-        }
-        return s;
-      })
+      prev.map((s) => (s.id === id ? { ...s, active: nextActive } : s))
     );
+
+    showToast(
+      `Service "${service.title}" status updated to ${nextActive ? "Active" : "Inactive"}.`,
+      "success"
+    );
+    logAction(`Toggled status of service '${service.title}' to ${nextActive ? "Active" : "Inactive"}`);
   };
 
   const handleDelete = (id, name) => {
     if (window.confirm(`Are you sure you want to delete service "${name}"?`)) {
       setServices((prev) => prev.filter((s) => s.id !== id));
       showToast(`Service "${name}" deleted successfully.`, "success");
+      logAction(`Deleted service: '${name}'`);
     }
   };
 
@@ -121,29 +123,33 @@ export default function ServicesAdmin() {
       return;
     }
 
+    const cleanTitle = title.trim();
+
     if (currentService) {
       setServices((prev) =>
         prev.map((s) =>
           s.id === currentService.id
             ? {
                 ...s,
-                title: title.trim(),
+                title: cleanTitle,
                 description: description.trim(),
                 active,
               }
             : s
         )
       );
-      showToast(`Service "${title.trim()}" updated successfully.`, "success");
+      showToast(`Service "${cleanTitle}" updated successfully.`, "success");
+      logAction(`Updated service: '${cleanTitle}'`);
     } else {
       const newService = {
         id: `srv-${Date.now()}`,
-        title: title.trim(),
+        title: cleanTitle,
         description: description.trim(),
         active,
       };
       setServices((prev) => [...prev, newService]);
-      showToast(`Service "${title.trim()}" added successfully.`, "success");
+      showToast(`Service "${cleanTitle}" added successfully.`, "success");
+      logAction(`Added service: '${cleanTitle}'`);
     }
 
     setIsModalOpen(false);

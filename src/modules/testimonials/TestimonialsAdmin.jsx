@@ -21,6 +21,7 @@ import {
   updateTestimonial,
   deleteTestimonial,
 } from "../../services/testimonialsService";
+import { logAction } from "../../utils/activityLogger";
 
 // Small deterministic accent rotation for avatar fallbacks, all pulled from
 // the existing theme palette (blue / emerald / amber) — nothing new.
@@ -153,6 +154,7 @@ export default function TestimonialsAdmin() {
         `Testimonial by "${testimonial.name}" status updated to ${nextVisible ? "Visible" : "Hidden"}.`,
         "success"
       );
+      logAction(`Toggled visibility of testimonial from '${testimonial.name}' to ${nextVisible ? "Visible" : "Hidden"}`);
       fetchTestimonials();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Failed to update visibility status.";
@@ -166,6 +168,7 @@ export default function TestimonialsAdmin() {
         setLoading(true);
         await deleteTestimonial(id);
         showToast(`Testimonial from "${clientName}" deleted successfully.`, "success");
+        logAction(`Deleted testimonial from '${clientName}'`);
         fetchTestimonials();
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "Failed to delete testimonial.";
@@ -182,6 +185,7 @@ export default function TestimonialsAdmin() {
       return;
     }
 
+    const clientName = name.trim();
     const visibleCount = testimonials.filter((t) => t.visible).length;
 
     try {
@@ -195,34 +199,38 @@ export default function TestimonialsAdmin() {
             "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
             "error"
           );
+          setLoading(false);
           return;
         }
 
         await updateTestimonial(currentTestimonial.id, {
-          name: name.trim(),
+          name: clientName,
           message: message.trim(),
           visible,
           is_visible: visible,
           avatar: avatarUrl.trim(),
         });
-        showToast(`Testimonial from "${name.trim()}" updated successfully.`, "success");
+        showToast(`Testimonial from "${clientName}" updated successfully.`, "success");
+        logAction(`Updated testimonial from '${clientName}'`);
       } else {
         if (visible && visibleCount >= 3) {
           showToast(
             "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
             "error"
           );
+          setLoading(false);
           return;
         }
 
         await createTestimonial({
-          name: name.trim(),
+          name: clientName,
           message: message.trim(),
           visible,
           is_visible: visible,
           avatar: avatarUrl.trim(),
         });
-        showToast(`Testimonial from "${name.trim()}" added successfully.`, "success");
+        showToast(`Testimonial from "${clientName}" added successfully.`, "success");
+        logAction(`Added testimonial from '${clientName}'`);
       }
       setIsModalOpen(false);
       fetchTestimonials();

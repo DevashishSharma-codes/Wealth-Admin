@@ -4,6 +4,7 @@ import * as assessmentService from "../services/assessmentService";
 import * as reportService from "../services/reportService";
 import { buildCalcPayload } from "../utils/formatters";
 import { useToast } from "../components/UI/Toast";
+import { logAction } from "../utils/activityLogger";
 
 export const AssessmentContext = createContext(null);
 
@@ -215,6 +216,7 @@ export default function AssessmentProvider({ children }) {
         payload.residential_address = formData.address;
       }
       await assessmentService.submitFlow1(currentId, payload);
+      logAction(`Submitted Assessment Step 1 (Communication details) for assessment ID: ${currentId}`);
       nextStep();
     } catch (err) {
       console.error(err);
@@ -254,6 +256,7 @@ export default function AssessmentProvider({ children }) {
         payload.spouse_dob = formData.spouseDob;
       }
       await assessmentService.submitFlow2(currentId, payload);
+      logAction(`Submitted Assessment Step 2 (Profiles) for client: '${payload.client_name}' (ID: ${currentId})`);
       nextStep();
     } catch (err) {
       console.error(err);
@@ -302,6 +305,7 @@ export default function AssessmentProvider({ children }) {
       }
 
       nextStep();
+      logAction(`Submitted Assessment Step 3 (Dependents) with ${childrenCount} dependents for client: '${formData.name || "Anonymous"}' (ID: ${currentId})`);
     } catch (err) {
       console.error(err);
       setApiError(err.message || "Failed to save step 3 details.");
@@ -365,6 +369,7 @@ export default function AssessmentProvider({ children }) {
           goals: apiGoals,
         });
       }
+      logAction(`Submitted Assessment Step 4 (Goals Mapping) with ${apiGoals.length} goals for client: '${formData.name || "Anonymous"}' (ID: ${currentId})`);
       nextStep();
     } catch (err) {
       console.error(err);
@@ -427,6 +432,7 @@ export default function AssessmentProvider({ children }) {
       const calcRes = await assessmentService.calculateRetirement(currentId, calcPayload);
       setCalculationResult(calcRes.data || calcRes);
       setShowReport(true);
+      logAction(`Calculated retirement projections for client: '${finalFormData.name || "Anonymous"}' (ID: ${currentId})`);
 
       // 3. Generate PDF Report in background
       try {
@@ -482,6 +488,7 @@ export default function AssessmentProvider({ children }) {
         const text = await reportBlob.text();
         const resJson = JSON.parse(text);
         showToast(resJson.message || "Report sent to email successfully.", "success");
+        logAction(`Sent client report email for assessment ID: ${assessmentId}`);
       } else {
         const downloadUrl = URL.createObjectURL(reportBlob);
         const link = document.createElement("a");
@@ -491,6 +498,7 @@ export default function AssessmentProvider({ children }) {
         link.click();
         link.remove();
         showToast("Report PDF downloaded successfully.", "success");
+        logAction(`Downloaded client report PDF for assessment ID: ${assessmentId}`);
       }
     } catch (error) {
       console.error("PDF download failed:", error);

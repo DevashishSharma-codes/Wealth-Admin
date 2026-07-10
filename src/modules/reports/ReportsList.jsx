@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Download, Search, CheckCircle, Loader2 } from "lucide-react";
 import { getAdminReports, downloadAdminReportWithFilename } from "../../services/reportService";
+import { logAction } from "../../utils/activityLogger";
 
 const parseUtcDate = (dateStr) => {
   if (!dateStr) return new Date();
@@ -88,6 +89,7 @@ export default function ReportsList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      logAction(`Downloaded report PDF file: '${fileName}' (Report ID: ${reportId})`);
     } catch (error) {
       console.error("Failed to download admin report:", error);
       alert("Failed to download PDF report: " + error.message);

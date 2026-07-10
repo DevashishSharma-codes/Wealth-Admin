@@ -12,6 +12,7 @@ import {
 } from "../../services/assessmentService";
 import { downloadAdminReportWithFilename } from "../../services/reportService";
 import { useToast } from "../../components/UI/Toast";
+import { logAction } from "../../utils/activityLogger";
 
 export default function UsersList({ globalSearch = "", setGlobalSearch = () => {} }) {
   const [users, setUsers] = useState([]);
@@ -146,54 +147,52 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
     try {
       const response = await getAssessment(user.id);
       const resData = response.data || response;
+      const assessmentData = resData.data || resData;
 
       const detailedUser = {
-        id: resData.assessment_id || user.id,
-        name: resData.personal?.client_name || user.name || "Anonymous Client",
+        id: assessmentData.assessment_id || user.id,
+        name: assessmentData.flow2?.client_name || user.name || "Anonymous Client",
         role: "Planning Client",
-        designation: resData.personal?.client_designation || "Client",
-        companyName: resData.personal?.client_company || "N/A",
-        dob: resData.personal?.client_dob ? new Date(resData.personal.client_dob).toLocaleDateString("en-IN") : "N/A",
-        age: resData.personal?.client_age ? `${resData.personal.client_age} Years` : "N/A",
-        maritalStatus: resData.personal?.spouse_name ? "Married" : "Single",
-        targetRetireAge: resData.personal?.client_retirement_age || 60,
+        occupation: assessmentData.flow2?.client_occupation || "N/A",
+        designation: assessmentData.flow2?.client_designation || "Client",
+        companyName: assessmentData.flow2?.client_company || "N/A",
+        dob: assessmentData.flow2?.client_dob ? new Date(assessmentData.flow2.client_dob).toLocaleDateString("en-IN") : "N/A",
+        age: assessmentData.flow2?.client_age ? `${assessmentData.flow2.client_age} Years` : "N/A",
+        maritalStatus: assessmentData.flow2?.spouse_name ? "Married" : "Single",
+        targetRetireAge: assessmentData.flow2?.client_retirement_age || 60,
 
-        email: resData.communication?.email || user.email || "N/A",
-        phone: resData.communication?.mobile || user.phone || "N/A",
-        address: resData.communication?.residential_address || "N/A",
-        consent: resData.communication?.consent ?? true,
+        email: assessmentData.flow1?.email || user.email || "N/A",
+        phone: assessmentData.flow1?.mobile || user.phone || "N/A",
+        address: assessmentData.flow1?.residential_address || "N/A",
+        consent: assessmentData.flow1?.consent ?? true,
 
-        spouseName: resData.personal?.spouse_name || "",
-        spouseAge: resData.personal?.spouse_age ? `${resData.personal.spouse_age} Years` : "N/A",
-        spouseOccupation: resData.personal?.spouse_occupation || "",
-        spouseDesignation: resData.personal?.spouse_designation || "",
-        spouseCompanyName: resData.personal?.spouse_company || "",
-        spouseDob: resData.personal?.spouse_dob || "",
+        spouseName: assessmentData.flow2?.spouse_name || "",
+        spouseAge: assessmentData.flow2?.spouse_age ? `${assessmentData.flow2.spouse_age} Years` : "N/A",
+        spouseOccupation: assessmentData.flow2?.spouse_occupation || "",
+        spouseDesignation: assessmentData.flow2?.spouse_designation || "",
+        spouseCompanyName: assessmentData.flow2?.spouse_company || "",
+        spouseDob: assessmentData.flow2?.spouse_dob || "",
 
-        childrenCount: resData.family?.number_of_children || 0,
-        children: (resData.family?.children || []).map((c) => ({
+        childrenCount: assessmentData.flow3?.number_of_children || 0,
+        children: (assessmentData.flow3?.children || []).map((c) => ({
           name: c.full_name || "",
           dob: c.date_of_birth ? new Date(c.date_of_birth).toLocaleDateString("en-IN") : "N/A",
           age: c.calculated_age ? `${c.calculated_age} Years` : "N/A",
+          occupation: c.occupation || "N/A",
+          dependent: c.financially_dependent ?? true,
         })),
 
         status: user.status,
         reportId: user.reportId,
 
-        projections: {
-          sip: user.projections?.sip || "N/A",
-          corpus: user.projections?.corpus || "N/A",
-          insurance: user.projections?.insurance || "N/A",
-          equity: user.projections?.equity || 60,
-          debt: user.projections?.debt || 30,
-          commodities: user.projections?.commodities || 10,
-        },
-
-        goals: (resData.goals || []).map((g) => ({
+        goals: (assessmentData.flow4?.goals || []).map((g) => ({
           id: g.id,
           type: g.goal_type || "",
           targetYear: g.target_year || "",
           todaysCost: g.today_cost ? `₹${g.today_cost.toLocaleString("en-IN")}` : "N/A",
+          futureCost: g.future_cost ? `₹${Math.round(g.future_cost).toLocaleString("en-IN")}` : "N/A",
+          monthlySip: g.monthly_sip ? `₹${Math.round(g.monthly_sip).toLocaleString("en-IN")}` : "N/A",
+          inflationRate: g.inflation_rate ? `${(g.inflation_rate * 100).toFixed(0)}%` : "6%",
           progress: g.monthly_sip ? 100 : 0,
         })),
 
@@ -201,6 +200,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       };
 
       setSelectedUser(detailedUser);
+      logAction(`Viewed assessment details for client: '${user.name}' (ID: ${user.id})`);
     } catch (err) {
       console.error("Failed to load assessment details:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to load assessment details.";
@@ -223,6 +223,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       link.click();
       link.remove();
       showToast("Report PDF downloaded successfully.", "success");
+      logAction(`Downloaded report PDF file: '${fileName}' (Report ID: ${reportId})`);
     } catch (error) {
       console.error("Failed to download admin report:", error);
       showToast(error.message || "Failed to download PDF report.", "error");
@@ -247,6 +248,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       link.remove();
       URL.revokeObjectURL(url);
       showToast("Excel export downloaded successfully!", "success");
+      logAction(`Exported assessment ID ${assessmentId} to Excel`);
     } catch (error) {
       console.error("Failed to download assessment Excel:", error);
       showToast("Failed to download Excel report: " + error.message, "error");
@@ -270,6 +272,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       link.remove();
       URL.revokeObjectURL(url);
       showToast("Users list exported successfully!", "success");
+      logAction("Exported all client users to Excel spreadsheet");
     } catch (error) {
       console.error("Failed to export users to Excel:", error);
       showToast("Failed to export users: " + error.message, "error");
@@ -293,6 +296,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       link.remove();
       URL.revokeObjectURL(url);
       showToast("Assessments list exported successfully!", "success");
+      logAction("Exported all client assessments to Excel spreadsheet");
     } catch (error) {
       console.error("Failed to export assessments to Excel:", error);
       showToast("Failed to export assessments: " + error.message, "error");
@@ -677,9 +681,6 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                     <h3 className="text-base font-extrabold text-zinc-800 leading-none">
                       {selectedUser.name}
                     </h3>
-                    <span className="inline-block mt-1 text-xs text-zinc-400 font-medium">
-                      {selectedUser.role}
-                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -729,10 +730,11 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                     <User className="w-4 h-4" /> Personal Details
                   </h4>
                   <div className="space-y-2 text-xs font-medium">
-                    <div className="flex justify-between"><span className="text-zinc-400">Occupation</span><span className="text-zinc-800 font-bold">{selectedUser.role}</span></div>
+                    <div className="flex justify-between"><span className="text-zinc-400">Occupation</span><span className="text-zinc-800 font-bold">{selectedUser.occupation} ({selectedUser.designation})</span></div>
+                    <div className="flex justify-between"><span className="text-zinc-400">Company</span><span className="text-zinc-800 font-bold">{selectedUser.companyName}</span></div>
                     <div className="flex justify-between"><span className="text-zinc-400">Date of Birth</span><span className="text-zinc-800 font-bold">{selectedUser.dob} ({selectedUser.age})</span></div>
                     <div className="flex justify-between"><span className="text-zinc-400">Marital Status</span><span className="text-zinc-800 font-bold">{selectedUser.maritalStatus}</span></div>
-                    <div className="flex justify-between"><span className="text-zinc-400">Retirement Age</span><span className="text-zinc-800 font-bold">{selectedUser.targetRetireAge}</span></div>
+                    <div className="flex justify-between"><span className="text-zinc-400">Retirement Age</span><span className="text-zinc-800 font-bold">{selectedUser.targetRetireAge} Years</span></div>
                   </div>
                 </div>
 
@@ -757,15 +759,23 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                   </h4>
                   
                   {selectedUser.spouseName && (
-                    <div className="bg-zinc-50/50 p-3 rounded-lg border border-zinc-200 flex justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] font-bold text-zinc-400 block">SPOUSE</span>
-                        <span className="font-bold text-zinc-800">{selectedUser.spouseName} ({selectedUser.spouseAge})</span>
+                    <div className="bg-zinc-50/50 p-3 rounded-lg border border-zinc-200 flex flex-col gap-1 text-xs">
+                      <div className="flex justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold text-zinc-400 block">SPOUSE</span>
+                          <span className="font-bold text-zinc-800">{selectedUser.spouseName} ({selectedUser.spouseAge})</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-bold text-zinc-400 block">OCCUPATION</span>
+                          <span className="font-semibold text-zinc-500">{selectedUser.spouseOccupation || "N/A"} {selectedUser.spouseDesignation && `@ ${selectedUser.spouseDesignation}`}</span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-bold text-zinc-400 block">OCCUPATION</span>
-                        <span className="font-semibold text-zinc-500">{selectedUser.spouseDesignation} @ {selectedUser.spouseCompanyName}</span>
-                      </div>
+                      {selectedUser.spouseCompanyName && (
+                        <div className="flex justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-100">
+                          <span>Company</span>
+                          <span className="font-bold text-zinc-700">{selectedUser.spouseCompanyName}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -774,12 +784,23 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                       <span className="text-[10px] font-bold text-zinc-400 block uppercase">Children ({selectedUser.childrenCount})</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {selectedUser.children.map((child, idx) => (
-                          <div key={idx} className="p-3 bg-zinc-50/50 rounded-lg border border-zinc-200 text-xs flex justify-between items-center">
-                            <div>
-                              <span className="font-bold text-zinc-800">{child.name}</span>
-                              <span className="block text-[10px] text-zinc-400">DOB: {child.dob}</span>
+                          <div key={idx} className="p-3 bg-zinc-50/50 rounded-lg border border-zinc-200 text-xs flex flex-col gap-1.5">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <span className="font-bold text-zinc-800">{child.name}</span>
+                                <span className="block text-[10px] text-zinc-400">DOB: {child.dob}</span>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="bg-[#2B7FFF]/5 text-[#2B7FFF] font-semibold px-2 py-0.5 rounded-md text-[10px]">{child.age}</span>
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase">{child.dependent ? "Dependent" : "Independent"}</span>
+                              </div>
                             </div>
-                            <span className="bg-[#2B7FFF]/5 text-[#2B7FFF] font-semibold px-2 py-0.5 rounded-md text-[10px]">{child.age}</span>
+                            {child.occupation && (
+                              <div className="text-[10px] text-zinc-500 pt-1 border-t border-zinc-100 flex justify-between">
+                                <span>Occupation</span>
+                                <span className="font-bold text-zinc-700">{child.occupation}</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -792,46 +813,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                 </div>
               )}
 
-              {/* Projections Corpus Metrics Card */}
-              {selectedUser.status === "Completed" && (
-                <div className="bg-white border border-zinc-200/60 p-5 rounded-xl space-y-4">
-                  <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 pb-2">
-                    <Award className="w-4 h-4" /> Strategic Financial Projections
-                  </h4>
 
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 bg-[#2B7FFF]/5 rounded-xl border border-[#2B7FFF]/10">
-                      <span className="text-[9px] font-bold text-zinc-400 block uppercase">Recommended SIP</span>
-                      <span className="text-base font-extrabold text-[#2B7FFF] block mt-1">{selectedUser.projections.sip}</span>
-                      <span className="text-[9px] text-zinc-400 block mt-0.5">per month</span>
-                    </div>
-                    <div className="p-3 bg-[#2B7FFF]/5 rounded-xl border border-[#2B7FFF]/10">
-                      <span className="text-[9px] font-bold text-zinc-400 block uppercase">Required Corpus</span>
-                      <span className="text-base font-extrabold text-[#2B7FFF] block mt-1">{selectedUser.projections.corpus}</span>
-                      <span className="text-[9px] text-zinc-400 block mt-0.5">at retirement</span>
-                    </div>
-                    <div className="p-3 bg-[#2B7FFF]/5 rounded-xl border border-[#2B7FFF]/10">
-                      <span className="text-[9px] font-bold text-zinc-400 block uppercase">Insurance Gap</span>
-                      <span className="text-base font-extrabold text-[#2B7FFF] block mt-1">{selectedUser.projections.insurance}</span>
-                      <span className="text-[9px] text-zinc-400 block mt-0.5">Term/Life</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase">Asset Allocation Strategy</span>
-                    <div className="w-full flex h-3.5 rounded-full overflow-hidden border border-zinc-200">
-                      <div className="bg-[#2B7FFF] h-full" style={{ width: `${selectedUser.projections.equity}%` }} title={`Equity: ${selectedUser.projections.equity}%`} />
-                      <div className="bg-slate-400 h-full" style={{ width: `${selectedUser.projections.debt}%` }} title={`Debt: ${selectedUser.projections.debt}%`} />
-                      <div className="bg-emerald-500 h-full" style={{ width: `${selectedUser.projections.commodities}%` }} title={`Commodities: ${selectedUser.projections.commodities}%`} />
-                    </div>
-                    <div className="flex gap-4 text-[10px] font-semibold text-zinc-500 justify-center">
-                      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-[#2B7FFF] rounded-full" /> Equity ({selectedUser.projections.equity}%)</span>
-                      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-slate-400 rounded-full" /> Debt ({selectedUser.projections.debt}%)</span>
-                      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" /> Commodities ({selectedUser.projections.commodities}%)</span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Goals Card */}
               {selectedUser.goals && selectedUser.goals.length > 0 && (
@@ -842,13 +824,24 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
 
                   <div className="space-y-3">
                     {selectedUser.goals.map((goal) => (
-                      <div key={goal.id} className="text-xs">
-                        <div className="flex justify-between font-bold text-zinc-700 mb-1">
-                          <span>{goal.type} ({goal.targetYear})</span>
-                          <span>{goal.todaysCost} • {goal.progress}% Reached</span>
+                      <div key={goal.id} className="p-3 bg-zinc-50/50 rounded-xl border border-zinc-200 text-xs space-y-2">
+                        <div className="flex justify-between font-bold text-zinc-800">
+                          <span className="text-[#2B7FFF]">{goal.type} ({goal.targetYear})</span>
+                          <span>Today: {goal.todaysCost}</span>
                         </div>
-                        <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-[#2B7FFF] h-full rounded-full transition-all duration-300" style={{ width: `${goal.progress}%` }} />
+                        <div className="grid grid-cols-3 gap-2 text-[10px] text-zinc-500 font-semibold pt-1 border-t border-zinc-100">
+                          <div>
+                            <span className="block text-zinc-400">Future Cost</span>
+                            <span className="text-zinc-800 font-bold">{goal.futureCost}</span>
+                          </div>
+                          <div>
+                            <span className="block text-zinc-400">Monthly SIP</span>
+                            <span className="text-zinc-800 font-bold">{goal.monthlySip}</span>
+                          </div>
+                          <div>
+                            <span className="block text-zinc-400">Inflation Rate</span>
+                            <span className="text-zinc-800 font-bold">{goal.inflationRate}</span>
+                          </div>
                         </div>
                       </div>
                     ))}

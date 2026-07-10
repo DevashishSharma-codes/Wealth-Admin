@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Bell, Search, User, Menu } from "lucide-react";
-import { getAdminUsers, getAdminLeads, getAdminAssessments } from "../../services/assessmentService";
+import { getAdminLeads, getAdminAssessments, getAdminUsers } from "../../services/assessmentService";
+import { useAuth } from "../../context/AuthContext";
 
 const parseUtcDate = (dateStr) => {
   if (!dateStr) return new Date();
@@ -16,6 +17,7 @@ export default function Navbar({ activeTab, setActiveTab, globalSearch, setGloba
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { currentUser } = useAuth();
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -112,8 +114,11 @@ export default function Navbar({ activeTab, setActiveTab, globalSearch, setGloba
       reports: "Client Reports Database",
       rates: "Rate Configuration",
       upload: "Bulk Excel Upload",
+      services: "Manage Services",
+      testimonials: "Manage Testimonials",
       email: "Email Campaign & Marketing",
       logs: "API Key Management & Access Logs",
+      "activity-logs": "Administrative Audit Logs",
       settings: "System settings",
     };
     return titles[activeTab] || "Wealth Wisdom";
@@ -215,12 +220,13 @@ export default function Navbar({ activeTab, setActiveTab, globalSearch, setGloba
         </div>
 
         {/* User profile dropdown indicator */}
-        <div className="flex items-center gap-2 border-l border-zinc-200 pl-4">
-          <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200 shrink-0 select-none">
-            <User className="w-4 h-4 text-zinc-500" />
+        <div className="flex items-center gap-2 border-l border-zinc-200 pl-4" title={`Logged in as ${currentUser?.role || 'Guest'}`}>
+          <div className="w-8 h-8 rounded-lg bg-[#2B7FFF]/10 flex items-center justify-center text-[#2B7FFF] border border-[#2B7FFF]/20 shrink-0 select-none text-xs font-bold">
+            {currentUser?.role ? currentUser.role.split(" ").filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join("") : "U"}
           </div>
         </div>
       </div>
     </header>
   );
 }
+

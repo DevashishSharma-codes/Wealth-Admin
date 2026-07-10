@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { UploadCloud, FileSpreadsheet, Play, X, Loader2 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import { convertExcelToPdf } from "../../services/assessmentService";
+import { logAction } from "../../utils/activityLogger";
 
 export default function ExcelUpload() {
   const [dragActive, setDragActive] = useState(false);
@@ -104,6 +105,7 @@ export default function ExcelUpload() {
 
       setProgress(100);
       showToast("Assessments generated and PDF report downloaded successfully!", "success");
+      logAction(`Uploaded spreadsheet and generated assessments: '${file.name}'`);
       setFile(null);
       setProgress(0);
     } catch (error) {

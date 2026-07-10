@@ -12,10 +12,25 @@ import {
   ChevronLeft,
   ChevronRight,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  History,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+
+function getInitials(name) {
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
 
 export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
+  const { currentUser, logout } = useAuth();
+
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "users", label: "Users & Assessments", icon: Users },
@@ -27,6 +42,7 @@ export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCol
     { id: "testimonials", label: "Manage Testimonials", icon: MessageSquare },
     { id: "email", label: "Email & Marketing", icon: Mail },
     { id: "logs", label: "API Logs", icon: Terminal },
+    // { id: "activity-logs", label: "Activity Logs", icon: History },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -67,10 +83,15 @@ export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCol
 
       {/* Navigation menu list */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
+        {menuItems
+          .filter((item) => {
+            const isDevOnly = item.id === "logs" || item.id === "settings";
+            return !isDevOnly || currentUser?.role === "Developer";
+          })
+          .map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
             <button
               key={item.id}
               onClick={() => {
@@ -91,27 +112,42 @@ export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCol
       </nav>
 
       {/* Bottom Profile Details */}
-      <div className="p-3 border-t border-zinc-100">
+      <div className="p-3 border-t border-zinc-100 flex flex-col gap-2">
         <div
           className={`flex items-center gap-3 p-2 rounded-xl bg-zinc-50/50 ${
             (isCollapsed && !isMobileOpen) ? "justify-center" : ""
           }`}
         >
-          <div className="w-8 h-8 rounded-full bg-zinc-200 border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
-            <span className="text-xs font-semibold text-zinc-600">AU</span>
+          <div className="w-8 h-8 rounded-full bg-[#2B7FFF]/10 border border-[#2B7FFF]/20 flex items-center justify-center overflow-hidden shrink-0">
+            <span className="text-xs font-bold text-[#2B7FFF]">
+              {getInitials(currentUser?.role)}
+            </span>
           </div>
           {(!isCollapsed || isMobileOpen) && (
-            <div className="overflow-hidden">
-              <span className="block text-xs font-semibold text-zinc-800 truncate">
-                Admin User
+            <div className="overflow-hidden flex-1 text-left">
+              <span className="block text-xs font-bold text-zinc-800 truncate">
+                {currentUser?.role || "User"}
               </span>
-              <span className="block text-[10px] text-zinc-400 truncate -mt-0.5">
-                Super Admin
+              <span className="block text-[10px] font-semibold text-zinc-400 truncate -mt-0.5 font-mono">
+                @{currentUser?.username || "username"}
               </span>
             </div>
           )}
         </div>
+        
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 cursor-pointer transition-all duration-200 ${
+            (isCollapsed && !isMobileOpen) ? "justify-center" : ""
+          }`}
+          title="Sign Out"
+        >
+          <LogOut className="w-4.5 h-4.5 shrink-0" />
+          {(!isCollapsed || isMobileOpen) && <span className="text-xs font-bold">Sign Out</span>}
+        </button>
       </div>
     </aside>
   );
 }
+

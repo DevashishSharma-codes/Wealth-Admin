@@ -13,11 +13,15 @@ import ServicesAdmin from "./modules/services/ServicesAdmin";
 import TestimonialsAdmin from "./modules/testimonials/TestimonialsAdmin";
 import AssessmentProvider from "./context/AssessmentContext";
 import { ToastProvider } from "./components/UI/Toast";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import LoginPage from "./modules/auth/LoginPage";
+// import ActivityLogs from "./modules/logs/ActivityLogs";
 import "./App.css";
 
-export default function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [globalSearch, setGlobalSearch] = useState("");
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const handleWheel = (e) => {
@@ -31,7 +35,17 @@ export default function App() {
     };
   }, []);
 
+  if (!currentUser) {
+    return <LoginPage />;
+  }
+
   const renderActiveView = () => {
+    // Restrict access to developer-only views
+    const isDevOnly = activeTab === "logs" || activeTab === "settings";
+    if (isDevOnly && currentUser?.role !== "Developer") {
+      return <Dashboard />;
+    }
+
     switch (activeTab) {
       case "dashboard":
         return <Dashboard />;
@@ -57,6 +71,8 @@ export default function App() {
         return <EmailMarketing />;
       case "logs":
         return <ApiLogs />;
+      // case "activity-logs":
+      //   return <ActivityLogs />;
       case "settings":
         return <SettingsPage />;
       default:
@@ -65,15 +81,24 @@ export default function App() {
   };
 
   return (
+    <Layout
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      globalSearch={globalSearch}
+      setGlobalSearch={setGlobalSearch}
+    >
+      {renderActiveView()}
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
     <ToastProvider>
-      <Layout
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        globalSearch={globalSearch}
-        setGlobalSearch={setGlobalSearch}
-      >
-        {renderActiveView()}
-      </Layout>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ToastProvider>
   );
 }
+
