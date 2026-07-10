@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/UI/Toast";
-import { Lock, User, Eye, EyeOff, ShieldCheck, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
-import { USERS } from "../../services/authService";
+import { Lock, User, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -13,10 +12,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // Developer credentials assistant state
-  const [showAssistant, setShowAssistant] = useState(false);
-  const [copiedIndex, setCopiedIndex] = useState(null);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -38,12 +33,6 @@ export default function LoginPage() {
         showToast(result.error, "error");
       }
     }, 800);
-  };
-
-  const handleFillCredentials = (user) => {
-    setUsername(user.username);
-    setPassword(user.password);
-    showToast(`Filled credentials for ${user.role}`, "info");
   };
 
   return (
@@ -153,47 +142,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-        </div>
-
-        {/* Developer sandbox helper tool */}
-        <div className="bg-white/80 border border-zinc-200/50 rounded-2xl shadow-md overflow-hidden transition-all duration-200">
-          <button
-            onClick={() => setShowAssistant(!showAssistant)}
-            className="w-full px-4 py-3 flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-zinc-800 hover:bg-zinc-50/50 cursor-pointer transition-colors"
-          >
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              Dev Mode: Click-to-Fill Credentials
-            </span>
-            {showAssistant ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {showAssistant && (
-            <div className="px-4 pb-4 pt-2 border-t border-zinc-100 bg-zinc-50/50 space-y-2.5 animate-fade-in">
-              <p className="text-[10px] text-zinc-400 font-semibold">
-                Click any profile button below to auto-populate credentials for validation testing:
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {USERS.map((user, idx) => (
-                  <div
-                    key={user.username}
-                    onClick={() => handleFillCredentials(user)}
-                    className="p-2 border border-zinc-200/60 rounded-xl bg-white hover:border-[#2B7FFF]/50 hover:shadow-sm cursor-pointer transition-all duration-250 flex flex-col text-left group"
-                  >
-                    <span className="text-[10px] font-extrabold text-zinc-700 group-hover:text-[#2B7FFF]">
-                      {user.role}
-                    </span>
-                    <span className="text-[9px] text-zinc-400 font-semibold mt-0.5 font-mono">
-                      u: {user.username}
-                    </span>
-                    <span className="text-[9px] text-zinc-400 font-semibold font-mono">
-                      p: {user.password}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
