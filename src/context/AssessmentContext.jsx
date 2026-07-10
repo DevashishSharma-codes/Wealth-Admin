@@ -363,12 +363,10 @@ export default function AssessmentProvider({ children }) {
         }
       });
 
-      // Submit goals if any exist
-      if (apiGoals.length > 0) {
-        await assessmentService.submitFlow4(currentId, {
-          goals: apiGoals,
-        });
-      }
+      // Submit goals (even if empty, as requested)
+      await assessmentService.submitFlow4(currentId, {
+        goals: apiGoals,
+      });
       logAction(`Submitted Assessment Step 4 (Goals Mapping) with ${apiGoals.length} goals for client: '${formData.name || "Anonymous"}' (ID: ${currentId})`);
       nextStep();
     } catch (err) {
