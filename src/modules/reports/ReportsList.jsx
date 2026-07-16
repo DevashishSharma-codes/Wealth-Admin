@@ -34,6 +34,7 @@ export default function ReportsList() {
       fileName: rec.file_name || rec.fileName || `report-${rec.assessment_id || rec.report_id}.pdf`,
       fileType: rec.format || rec.fileType || "pdf",
       generatedDate: rawDate ? parseUtcDate(rawDate).toLocaleString("en-IN") : "N/A",
+      rawDate: rawDate || null,
       fileSize: rec.file_size || rec.fileSize || "2.4 MB"
     };
   };
@@ -58,6 +59,11 @@ export default function ReportsList() {
 
       if (Array.isArray(rawList)) {
         const parsedList = rawList.map((item) => parseReportRecord(item));
+        parsedList.sort((a, b) => {
+          const timeA = a.rawDate ? parseUtcDate(a.rawDate).getTime() : 0;
+          const timeB = b.rawDate ? parseUtcDate(b.rawDate).getTime() : 0;
+          return timeB - timeA;
+        });
         console.log("[ReportsList] Parsed reports count:", parsedList.length);
         setReports(parsedList);
       } else {

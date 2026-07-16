@@ -25,7 +25,7 @@ import { sendCampaign, getRecipients } from "../../services/marketingService";
  * Renders as an interactive pill that opens an anchored dropdown panel —
  * never shifts surrounding layout, closes on outside click / Escape.
  */
-function RecipientsDropdown({ recipients, count }) {
+function RecipientsDropdown({ recipients, count, onRecipientClick }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
@@ -150,7 +150,9 @@ function RecipientsDropdown({ recipients, count }) {
               filtered.map((email, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-zinc-50 transition-colors"
+                  onClick={() => onRecipientClick?.(email)}
+                  className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-zinc-100 transition-colors cursor-pointer"
+                  title="Click to add to recipients list"
                 >
                   <div className="w-6 h-6 rounded-full bg-[#8EC5FF]/25 text-[#2B7FFF] text-[9px] font-extrabold flex items-center justify-center shrink-0 uppercase">
                     {email.slice(0, 2)}
@@ -191,6 +193,19 @@ export default function EmailMarketing() {
   const [recipientsCount, setRecipientsCount] = useState(null);
   const [recipients, setRecipients] = useState("");
   const [recipientsList, setRecipientsList] = useState([]);
+
+  const handleRecipientClick = (email) => {
+    setRecipients((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) {
+        return email;
+      }
+      if (trimmed.endsWith(",")) {
+        return `${prev} ${email}`;
+      }
+      return `${prev}, ${email}`;
+    });
+  };
 
   // Tracks active text styles at user's cursor position
   const [activeStyles, setActiveStyles] = useState({
@@ -339,7 +354,7 @@ export default function EmailMarketing() {
               <Mail className="w-4 h-4 text-[#2B7FFF]" />
               <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Email Composer</span>
             </div>
-            <RecipientsDropdown recipients={recipientsList} count={recipientsCount} />
+            <RecipientsDropdown recipients={recipientsList} count={recipientsCount} onRecipientClick={handleRecipientClick} />
           </div>
 
           <form onSubmit={handleSend} className="space-y-4">

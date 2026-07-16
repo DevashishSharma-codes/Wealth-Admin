@@ -2,6 +2,16 @@ import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Search, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet, FileText, TrendingUp, ChevronDown, X } from "lucide-react";
 
+const parseUtcDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  let s = dateStr.trim();
+  if (!s.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(s)) {
+    s = s.replace(" ", "T") + "Z";
+  }
+  return new Date(s);
+};
+
 const getDisplayVal = (val) => {
   if (!val) return "N/A";
   if (typeof val === "object") {
@@ -183,7 +193,8 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       reportGenerated: rec.report_generated !== undefined ? !!rec.report_generated : (rec.report_id ? true : false),
 
       status: rec.report_id ? "Completed" : "Lead",
-      createdDate: rec.created_at ? new Date(rec.created_at).toLocaleDateString("en-IN") : "N/A",
+      createdDate: rec.created_at ? parseUtcDate(rec.created_at).toLocaleDateString("en-IN") : "N/A",
+      createdAtRaw: rec.created_at || null,
       reportId: rec.report_id || null,
       downloadPath: rec.download_path || null,
 
@@ -201,7 +212,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       activities: [
         {
           type: "Assessment Created",
-          date: rec.created_at ? new Date(rec.created_at).toLocaleDateString() : "Just now",
+          date: rec.created_at ? parseUtcDate(rec.created_at).toLocaleDateString() : "Just now",
           summary: "Assessment intake record initiated via client application.",
           actor: "Client Portal"
         }
@@ -216,9 +227,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       let response;
       const params = { per_page: 1000 };
 
-      if (statusFilter === "All") {
-        response = await getAdminUsers(params);
-      } else if (statusFilter === "Leads") {
+      if (statusFilter === "All" || statusFilter === "Leads") {
         response = await getAdminLeads(params);
       } else if (statusFilter === "Completed") {
         response = await getAdminAssessments(params);
@@ -236,7 +245,12 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
 
       if (Array.isArray(rawList)) {
         const parsedList = rawList.map((item) => parseAssessmentRecord(item));
-        console.log("[UsersList] Completed parsing assessments list. Count:", parsedList.length);
+        parsedList.sort((a, b) => {
+          const timeA = a.flow4SubmittedAt ? parseUtcDate(a.flow4SubmittedAt).getTime() : (a.createdAtRaw ? parseUtcDate(a.createdAtRaw).getTime() : 0);
+          const timeB = b.flow4SubmittedAt ? parseUtcDate(b.flow4SubmittedAt).getTime() : (b.createdAtRaw ? parseUtcDate(b.createdAtRaw).getTime() : 0);
+          return timeB - timeA;
+        });
+        console.log("[UsersList] Completed parsing and sorting assessments list. Count:", parsedList.length);
         setUsers(parsedList);
       } else {
         console.warn("[UsersList] Could not find items array in response. Setting users to empty.");
@@ -1330,7 +1344,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                                   )}
                                 </div>
                                 <span className="text-[10px] text-zinc-400 font-semibold block ww-figure">
-                                  {report.generated_at ? new Date(report.generated_at).toLocaleString("en-IN") : "N/A"}
+                                  {report.generated_at ? parseUtcDate(report.generated_at).toLocaleString("en-IN") : "N/A"}
                                 </span>
                               </div>
                               <button
