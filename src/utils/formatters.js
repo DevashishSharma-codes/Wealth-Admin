@@ -21,17 +21,30 @@ export const calculateReadinessScore = (formData) => {
 };
 
 export const buildCalcPayload = (formData) => {
-  const hasSpouse = !!(formData.spouseName && formData.spouseName.trim());
-  const totalIncomeReq = parseFloat(formData.requiredAnnualIncome) || 1200000;
+  // Check if retirement section was skipped (all fields empty)
+  const fields = [
+    'targetRetireAge', 'yearsUntilRetirement', 'requiredAnnualIncome',
+    'epfEmployerShare', 'epfEmployeeShare', 'epfTotalCorpus',
+    'npsEmployerShare', 'npsEmployeeShare', 'npsTotalCorpus',
+    'superEmployerShare', 'superTotalCorpus',
+  ];
+  const isRetEmpty = fields.every(field => !formData[field] || formData[field].toString().trim() === '');
 
+  if (isRetEmpty) {
+    return {};
+  }
+
+  // Send raw user-entered values — no frontend calculations, backend handles all math.
+  // EPF annual = sum of all monthly contribution shares across EPF + NPS + Super (raw, no * 12)
   const clientEpfAnnual = (
     (parseFloat(formData.epfEmployerShare) || 0) +
     (parseFloat(formData.epfEmployeeShare) || 0) +
     (parseFloat(formData.npsEmployerShare) || 0) +
     (parseFloat(formData.npsEmployeeShare) || 0) +
     (parseFloat(formData.superEmployerShare) || 0)
-  ) * 12;
+  );
 
+  // EPF accum = sum of all accumulated corpus across EPF + NPS + Super (raw values)
   const clientEpfAccum = (
     (parseFloat(formData.epfTotalCorpus) || 0) +
     (parseFloat(formData.npsTotalCorpus) || 0) +
@@ -39,12 +52,12 @@ export const buildCalcPayload = (formData) => {
   );
 
   return {
+    client_annual_ret_reqd: parseFloat(formData.requiredAnnualIncome) || 0,
+    household_monthly: parseFloat(formData.monthlyExpense) || 0,
     client_epf_annual: clientEpfAnnual,
     client_epf_accum: clientEpfAccum,
-    client_annual_ret_reqd: hasSpouse ? totalIncomeReq * 0.6 : totalIncomeReq,
-    spouse_epf_annual: hasSpouse ? 7200 : 0,
+    spouse_annual_ret_reqd: 0,
+    spouse_epf_annual: 0,
     spouse_epf_accum: 0,
-    spouse_annual_ret_reqd: hasSpouse ? totalIncomeReq * 0.4 : 0,
-    household_monthly: parseFloat(formData.monthlyExpense) || 30000,
   };
 };

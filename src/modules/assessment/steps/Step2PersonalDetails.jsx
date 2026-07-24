@@ -25,19 +25,24 @@ export default function Step2PersonalDetails() {
   const isValid = validateStep2(formData);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="border-b border-zinc-200 pb-3 flex items-center gap-2 select-none">
-        <User className="w-5 h-5 text-[#2B7FFF] shrink-0" />
-        <div>
-          <h3 className="text-sm font-bold text-zinc-800 leading-none">Personal Details</h3>
-          <p className="text-[10px] text-zinc-400 font-medium mt-1">Specify current employment and monthly expenditure data.</p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header section */}
+      <div className="border-b border-zinc-100 pb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#2B7FFF] shrink-0">
+            <User className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-zinc-900 leading-tight">Personal Details</h3>
+            <p className="text-xs text-zinc-400 font-medium mt-0.5">Specify client and spouse professional background & monthly expense (optional).</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Client info */}
+      <div className="space-y-8">
+        {/* Client Info Section */}
         <div className="space-y-4">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
             Client Information
           </div>
 
@@ -46,11 +51,11 @@ export default function Step2PersonalDetails() {
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            placeholder="Enter your full name"
+            placeholder="Enter full name"
             required={false}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Your Occupation"
               name="occupation"
@@ -69,7 +74,7 @@ export default function Step2PersonalDetails() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Your Company Name"
               name="companyName"
@@ -87,23 +92,23 @@ export default function Step2PersonalDetails() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2">
             <FormField
-              label="Your Monthly Household Expense"
+              label="Your Monthly Household Expense (INR)"
               name="monthlyExpense"
               value={formData.monthlyExpense}
               onChange={handleInputChange}
-              placeholder="Enter monthly expense value (INR)"
+              placeholder="Enter monthly expense value"
               type="number"
               required={false}
             />
           </div>
         </div>
 
-        {/* Spouse info */}
-        <div className="space-y-4 pt-3 border-t border-zinc-200">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
-            Spouse Information (Optional)
+        {/* Spouse Info Section */}
+        <div className="space-y-4 pt-4 border-t border-zinc-100">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
+            Spouse Information
           </div>
 
           <FormField
@@ -111,11 +116,11 @@ export default function Step2PersonalDetails() {
             name="spouseName"
             value={formData.spouseName}
             onChange={handleInputChange}
-            placeholder="Enter spouse name"
+            placeholder="Enter spouse full name"
             required={false}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Spouse Occupation"
               name="spouseOccupation"
@@ -134,7 +139,7 @@ export default function Step2PersonalDetails() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Spouse Company Name"
               name="spouseCompanyName"
@@ -154,12 +159,14 @@ export default function Step2PersonalDetails() {
         </div>
       </div>
 
-      <StepNavigation
-        onBack={prevStep}
-        onNext={submitStep2}
-        isDisabled={!isValid}
-        isLoading={isSubmitting}
-      />
+      <div className="pt-4 border-t border-zinc-100">
+        <StepNavigation
+          onBack={prevStep}
+          onNext={submitStep2}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+        />
+      </div>
     </div>
   );
 }

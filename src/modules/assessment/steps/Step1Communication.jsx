@@ -1,4 +1,4 @@
-
+import React from "react";
 import { useAssessment } from "../../../context/AssessmentContext";
 import { validateStep1 } from "../../../utils/validators";
 import StepNavigation from "../../../components/UI/StepNavigation";
@@ -23,23 +23,28 @@ export default function Step1Communication() {
   const isValid = validateStep1(formData);
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-zinc-200 pb-3 flex items-center gap-2 select-none">
-        <MessageSquare className="w-5 h-5 text-[#2B7FFF] shrink-0" />
-        <div>
-          <h3 className="text-sm font-bold text-zinc-800 leading-none">Communication Details</h3>
-          <p className="text-[10px] text-zinc-400 font-medium mt-1">Provide your contact info to secure this assessment profile.</p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header section */}
+      <div className="border-b border-zinc-100 pb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#2B7FFF] shrink-0">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-zinc-900 leading-tight">Communication Details</h3>
+            <p className="text-xs text-zinc-400 font-medium mt-0.5">Provide contact info for client and spouse profiles (all fields optional).</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Contact information Section */}
+      <div className="space-y-8">
+        {/* Contact Information Section */}
         <div className="space-y-4">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
-            Contact Information
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
+            Client Contact Information
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Mobile Number"
               name="mobile"
@@ -70,12 +75,12 @@ export default function Step1Communication() {
         </div>
 
         {/* Spouse Contact Section */}
-        <div className="space-y-4 pt-2">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
+        <div className="space-y-4 pt-4 border-t border-zinc-100">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
             Spouse Contact Information
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Spouse Mobile Number"
               name="spouseMobile"
@@ -98,11 +103,13 @@ export default function Step1Communication() {
 
       </div>
 
-      <StepNavigation
-        onNext={submitStep1}
-        isDisabled={!isValid}
-        isLoading={isSubmitting}
-      />
+      <div className="pt-4 border-t border-zinc-100">
+        <StepNavigation
+          onNext={submitStep1}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+        />
+      </div>
     </div>
   );
 }

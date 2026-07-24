@@ -21,54 +21,65 @@ export default function Step5RetirementSavings() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="border-b border-zinc-200 pb-3 flex items-center gap-2 select-none">
-        <Calculator className="w-5 h-5 text-[#2B7FFF] shrink-0" />
-        <div>
-          <h3 className="text-sm font-bold text-zinc-800 leading-none">Current Retirement Savings</h3>
-          <p className="text-[10px] text-zinc-400 font-medium mt-1">Review target age limits and compile current savings holdings.</p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header section */}
+      <div className="border-b border-zinc-100 pb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#2B7FFF] shrink-0">
+            <Calculator className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-zinc-900 leading-tight">Current Retirement Savings</h3>
+            <p className="text-xs text-zinc-400 font-medium mt-0.5">Review target retirement parameters and accumulated holdings (optional).</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Core Parameters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
+            Retirement Plan Parameters
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <FormField
+              label="Target Retirement Age"
+              name="targetRetireAge"
+              value={formData.targetRetireAge}
+              onChange={handleInputChange}
+              placeholder="Enter target retirement age"
+              type="number"
+              required={false}
+            />
+            <FormField
+              label="Years Until Retirement"
+              name="yearsUntilRetirement"
+              value={formData.yearsUntilRetirement}
+              onChange={handleInputChange}
+              placeholder="Enter years remaining"
+              type="number"
+              required={false}
+            />
+          </div>
+
           <FormField
-            label="Target Retirement Age"
-            name="targetRetireAge"
-            value={formData.targetRetireAge}
+            label="Required Annual Income (Today's Value)"
+            name="requiredAnnualIncome"
+            value={formData.requiredAnnualIncome}
             onChange={handleInputChange}
-            placeholder="Enter target retirement age"
-            type="number"
-            required={false}
-          />
-          <FormField
-            label="Years Until Retirement"
-            name="yearsUntilRetirement"
-            value={formData.yearsUntilRetirement}
-            onChange={handleInputChange}
-            placeholder="Enter years remaining"
+            placeholder="Enter annual income required"
             type="number"
             required={false}
           />
         </div>
 
-        <FormField
-          label="Required Annual Income (Today's Value)"
-          name="requiredAnnualIncome"
-          value={formData.requiredAnnualIncome}
-          onChange={handleInputChange}
-          placeholder="Enter annual income required"
-          type="number"
-          required={false}
-        />
-
         {/* EPF Section */}
-        <div className="space-y-4 pt-3 border-t border-zinc-200">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
+        <div className="space-y-4 pt-4 border-t border-zinc-100">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
             Employees' Provident Fund (EPF)
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Employer's Share (Monthly)"
               name="epfEmployerShare"
@@ -100,11 +111,11 @@ export default function Step5RetirementSavings() {
         </div>
 
         {/* NPS Section */}
-        <div className="space-y-4 pt-3 border-t border-zinc-200">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
+        <div className="space-y-4 pt-4 border-t border-zinc-100">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
             National Pension System (NPS)
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Employer's Contribution (Monthly)"
               name="npsEmployerShare"
@@ -136,11 +147,11 @@ export default function Step5RetirementSavings() {
         </div>
 
         {/* Superannuation Section */}
-        <div className="space-y-4 pt-3 border-t border-zinc-200">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-slate-300 pl-2 mb-2 select-none">
+        <div className="space-y-4 pt-4 border-t border-zinc-100">
+          <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-l-2 border-[#2B7FFF] pl-2.5 select-none">
             Superannuation Fund
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField
               label="Employer's Share (Monthly)"
               name="superEmployerShare"
@@ -163,13 +174,15 @@ export default function Step5RetirementSavings() {
         </div>
       </div>
 
-      <StepNavigation
-        onBack={prevStep}
-        onNext={submitStep5}
-        nextLabel="Submit & Calculate"
-        isDisabled={false}
-        isLoading={isCalculating}
-      />
+      <div className="pt-4 border-t border-zinc-100">
+        <StepNavigation
+          onBack={prevStep}
+          onNext={submitStep5}
+          nextLabel="Submit & Calculate"
+          isDisabled={false}
+          isLoading={isCalculating}
+        />
+      </div>
     </div>
   );
 }

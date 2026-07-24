@@ -22,7 +22,7 @@ const initialFormData = {
   spouseMobile: "",
   spouseEmail: "",
   address: "",
-  consent: false,
+  consent: true,
   name: "",
   occupation: "",
   designation: "",
@@ -34,8 +34,8 @@ const initialFormData = {
   spouseDesignation: "",
   spouseCompanyName: "",
   spouseDob: "",
-  targetRetireAge: "60",
-  yearsUntilRetirement: "19",
+  targetRetireAge: "",
+  yearsUntilRetirement: "",
   requiredAnnualIncome: "",
   epfEmployerShare: "",
   epfEmployeeShare: "",
@@ -48,10 +48,10 @@ const initialFormData = {
 };
 
 const initialChildren = [
-  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "" },
-  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "" },
-  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "" },
-  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "" },
+  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "", goals: [{ id: "g-init-1", goalType: "", targetYear: "", todaysCost: "" }] },
+  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "", goals: [{ id: "g-init-2", goalType: "", targetYear: "", todaysCost: "" }] },
+  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "", goals: [{ id: "g-init-3", goalType: "", targetYear: "", todaysCost: "" }] },
+  { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "", goals: [{ id: "g-init-4", goalType: "", targetYear: "", todaysCost: "" }] },
 ];
 
 const initialGoals = [];
@@ -110,7 +110,35 @@ export default function AssessmentProvider({ children }) {
   const updateChild = (index, fields) => {
     setChildrenData((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], ...fields };
+      if (!updated[index]) {
+        updated[index] = { name: "", occupation: "", dependent: "Yes", dob: "", age: "", goalType: "", targetYear: "", todaysCost: "", goals: [{ id: Date.now() + Math.random(), goalType: "", targetYear: "", todaysCost: "" }] };
+      }
+      
+      const child = { ...updated[index], ...fields };
+
+      if (!child.goals || !Array.isArray(child.goals)) {
+        child.goals = [{ id: Date.now() + Math.random(), goalType: child.goalType || "", targetYear: child.targetYear || "", todaysCost: child.todaysCost || "" }];
+      }
+
+      if ("goalType" in fields || "targetYear" in fields || "todaysCost" in fields) {
+        const updatedGoals = [...child.goals];
+        if (updatedGoals[0]) {
+          updatedGoals[0] = {
+            ...updatedGoals[0],
+            ...("goalType" in fields ? { goalType: fields.goalType } : {}),
+            ...("targetYear" in fields ? { targetYear: fields.targetYear } : {}),
+            ...("todaysCost" in fields ? { todaysCost: fields.todaysCost } : {}),
+          };
+          child.goals = updatedGoals;
+        }
+      }
+
+      if ("goals" in fields && fields.goals.length > 0) {
+        const firstGoal = fields.goals[0];
+        child.goalType = firstGoal.goalType || "";
+        child.targetYear = firstGoal.targetYear || "";
+        child.todaysCost = firstGoal.todaysCost || "";
+      }
 
       if ("dob" in fields && fields.dob) {
         const parts = fields.dob.split("/");
@@ -127,14 +155,15 @@ export default function AssessmentProvider({ children }) {
             if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
               ageVal--;
             }
-            updated[index].age = ageVal >= 0 ? `${ageVal} Years` : "0 Years";
+            child.age = ageVal >= 0 ? `${ageVal} Years` : "0 Years";
           } else {
-            updated[index].age = "";
+            child.age = "";
           }
         } else {
-          updated[index].age = "";
+          child.age = "";
         }
       }
+      updated[index] = child;
       return updated;
     });
   };
@@ -143,12 +172,14 @@ export default function AssessmentProvider({ children }) {
     setChildrenCountState(n);
   };
 
-  const addGoal = (type) => {
+  const addGoal = (type, customData = {}) => {
     const newGoal = {
       id: Date.now() + Math.random(),
       type,
-      targetYear: "",
-      todaysCost: "",
+      targetYear: customData.targetYear || "",
+      todaysCost: customData.todaysCost || "",
+      goalName: customData.goalName || "",
+      ...customData,
     };
     setActiveGoals((prev) => [...prev, newGoal]);
   };
@@ -238,7 +269,7 @@ export default function AssessmentProvider({ children }) {
         client_company: formData.companyName || "",
         client_dob: formData.dob || "",
         client_retirement_age: parseInt(formData.targetRetireAge) || 60,
-        spouse_retirement_age: 55,
+        spouse_retirement_age: 0,
       };
       if (formData.spouseName && formData.spouseName.trim()) {
         payload.spouse_name = formData.spouseName;
@@ -274,7 +305,7 @@ export default function AssessmentProvider({ children }) {
       const activeChildren = childrenData.slice(0, childrenCount).map((c, idx) => {
         const childObj = {
           child_number: idx + 1,
-          full_name: c.name || "",
+          child_name: c.name || "",
           financially_dependent: c.dependent === "Yes",
         };
         if (c.occupation && c.occupation.trim()) {
@@ -323,25 +354,33 @@ export default function AssessmentProvider({ children }) {
 
       // Child education goals
       childrenData.slice(0, childrenCount).forEach((c) => {
-        if (c.goalType && c.targetYear && c.todaysCost) {
-          const mappedType =
-            c.goalType === "Higher Education"
-              ? "Graduation"
-              : c.goalType === "Marriage"
-              ? "Marriage"
-              : "Other";
-          const goalObj = {
-            category: "child_goal",
-            goal_type: mappedType,
-            target_year: parseInt(c.targetYear) || 2035,
-            today_cost: parseFloat(c.todaysCost) || 0,
-            inflation_rate: 0.06,
-          };
-          if (c.id) {
-            goalObj.child_id = c.id;
+        if (!c) return;
+
+        const goalsToSubmit = c.goals && Array.isArray(c.goals) ? c.goals : [
+          { goalType: c.goalType, targetYear: c.targetYear, todaysCost: c.todaysCost }
+        ];
+
+        goalsToSubmit.forEach((g) => {
+          if (g.goalType && g.targetYear && g.todaysCost) {
+            const mappedType =
+              g.goalType === "Higher Education"
+                ? "Graduation"
+                : g.goalType === "Marriage"
+                ? "Marriage"
+                : "Other";
+            const goalObj = {
+              category: "child_goal",
+              goal_type: mappedType,
+              target_year: parseInt(g.targetYear),
+              today_cost: parseFloat(g.todaysCost),
+              inflation_rate: 0.06,
+            };
+            if (c.id) {
+              goalObj.child_id = c.id;
+            }
+            apiGoals.push(goalObj);
           }
-          apiGoals.push(goalObj);
-        }
+        });
       });
 
       // Lifestyle goals
@@ -353,17 +392,21 @@ export default function AssessmentProvider({ children }) {
           } else if (mappedType === "Others" || mappedType === "Other") {
             mappedType = "Other";
           }
-          apiGoals.push({
+          const goalObj = {
             category: "lifestyle",
             goal_type: mappedType,
-            target_year: parseInt(g.targetYear) || 2035,
-            today_cost: parseFloat(g.todaysCost) || 0,
+            target_year: parseInt(g.targetYear),
+            today_cost: parseFloat(g.todaysCost),
             inflation_rate: 0.06,
-          });
+          };
+          if (g.goalName || g.name || mappedType === "Other") {
+            goalObj.goal_name = g.goalName || g.name || "Custom Goal";
+          }
+          apiGoals.push(goalObj);
         }
       });
 
-      // Submit goals (even if empty, as requested)
+      // Submit goals (even if empty)
       await assessmentService.submitFlow4(currentId, {
         goals: apiGoals,
       });
@@ -382,19 +425,25 @@ export default function AssessmentProvider({ children }) {
     setIsCalculating(true);
 
     let finalFormData = { ...formData };
-    const numericFields = [
-      'targetRetireAge', 'yearsUntilRetirement', 'requiredAnnualIncome',
-      'epfEmployerShare', 'epfEmployeeShare', 'epfTotalCorpus',
-      'npsEmployerShare', 'npsEmployeeShare', 'npsTotalCorpus',
-      'superEmployerShare', 'superTotalCorpus',
-    ];
-    numericFields.forEach((field) => {
-      if (!finalFormData[field] || !finalFormData[field].toString().trim()) {
-        finalFormData[field] = "0";
-      }
-    });
+    const isRetEmpty = !formData.targetRetireAge && !formData.yearsUntilRetirement && !formData.requiredAnnualIncome &&
+                       !formData.epfEmployerShare && !formData.epfEmployeeShare && !formData.epfTotalCorpus &&
+                       !formData.npsEmployerShare && !formData.npsEmployeeShare && !formData.npsTotalCorpus &&
+                       !formData.superEmployerShare && !formData.superTotalCorpus;
 
-    setFormData(finalFormData);
+    if (!isRetEmpty) {
+      const numericFields = [
+        'targetRetireAge', 'yearsUntilRetirement', 'requiredAnnualIncome',
+        'epfEmployerShare', 'epfEmployeeShare', 'epfTotalCorpus',
+        'npsEmployerShare', 'npsEmployeeShare', 'npsTotalCorpus',
+        'superEmployerShare', 'superTotalCorpus',
+      ];
+      numericFields.forEach((field) => {
+        if (!finalFormData[field] || !finalFormData[field].toString().trim()) {
+          finalFormData[field] = "0";
+        }
+      });
+      setFormData(finalFormData);
+    }
 
     try {
       const currentId = await ensureAssessmentId();
@@ -405,8 +454,8 @@ export default function AssessmentProvider({ children }) {
         client_designation: finalFormData.designation || "",
         client_company: finalFormData.companyName || "",
         client_dob: finalFormData.dob || "",
-        client_retirement_age: parseInt(finalFormData.targetRetireAge) || 60,
-        spouse_retirement_age: 55,
+        client_retirement_age: finalFormData.targetRetireAge ? (parseInt(finalFormData.targetRetireAge) || 60) : 60,
+        spouse_retirement_age: 0,
       };
       if (finalFormData.spouseName && finalFormData.spouseName.trim()) {
         flow2Payload.spouse_name = finalFormData.spouseName;

@@ -15,3 +15,8 @@ export const validateStep4 = (activeGoals) => {
   return true;
 };
 
+export const validateStep5 = (formData) => {
+  return true;
+};
+
+

@@ -114,7 +114,7 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
   return (
     <div className="space-y-1.5 w-full relative" ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold text-slate-600 tracking-wide select-none">
+        <label className="block text-xs font-bold text-zinc-700 tracking-wide select-none">
           {label}
           {required && <span className="text-rose-500 font-bold ml-0.5">*</span>}
         </label>
@@ -127,23 +127,23 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
           onClick={() => setIsOpen(!isOpen)}
           readOnly
           placeholder={placeholder}
-          className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-indigo-500 font-bold pr-10 cursor-pointer text-slate-700"
+          className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] font-bold pr-10 cursor-pointer text-zinc-700 shadow-2xs"
         />
         <div 
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#2B7FFF] cursor-pointer"
         >
           <CalendarIcon className="w-4 h-4" />
         </div>
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 left-0 mt-2 p-4 w-[285px] rounded-2xl bg-white border border-slate-150 shadow-xl text-slate-800">
-          <div className="flex items-center justify-between gap-1 pb-3 mb-2 border-b border-slate-100">
+        <div className="absolute z-50 left-0 mt-2 p-4 w-[285px] rounded-2xl bg-white border border-zinc-200 shadow-xl text-zinc-800">
+          <div className="flex items-center justify-between gap-1 pb-3 mb-2 border-b border-zinc-100">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="w-7 h-7 rounded-lg flex items-center justify-center border border-slate-200 hover:bg-slate-50 font-bold text-xs cursor-pointer select-none"
+              className="w-7 h-7 rounded-lg flex items-center justify-center border border-zinc-200 hover:bg-zinc-50 font-bold text-xs cursor-pointer select-none"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -151,7 +151,7 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
               <select
                 value={currentMonth}
                 onChange={handleMonthChange}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer text-slate-750"
+                className="bg-zinc-50 border border-zinc-200 rounded-lg px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer text-zinc-700"
               >
                 {monthsList.map((m, idx) => (
                   <option key={m} value={idx}>{m}</option>
@@ -160,7 +160,7 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
               <select
                 value={currentYear}
                 onChange={handleYearChange}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer text-slate-750"
+                className="bg-zinc-50 border border-zinc-200 rounded-lg px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer text-zinc-700"
               >
                 {years.map(y => (
                   <option key={y} value={y}>{y}</option>
@@ -170,13 +170,13 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
             <button
               type="button"
               onClick={handleNextMonth}
-              className="w-7 h-7 rounded-lg flex items-center justify-center border border-slate-200 hover:bg-slate-50 font-bold text-xs cursor-pointer select-none"
+              className="w-7 h-7 rounded-lg flex items-center justify-center border border-zinc-200 hover:bg-zinc-50 font-bold text-xs cursor-pointer select-none"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] text-slate-400 mb-2 select-none">
+          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] text-zinc-400 mb-2 select-none">
             {weekdays.map(day => (
               <div key={day}>{day}</div>
             ))}
@@ -197,8 +197,8 @@ export default function DatePicker({ label, name, value, onChange, placeholder =
                   onClick={() => handleDateSelect(day)}
                   className={`w-8 h-8 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                     selected
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                      ? "bg-[#2B7FFF] text-white shadow-sm"
+                      : "text-zinc-700 hover:bg-indigo-50 hover:text-[#2B7FFF]"
                   }`}
                 >
                   {day}
