@@ -347,12 +347,18 @@ export default function TestimonialsAdmin() {
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
-              Client Name <span className="text-rose-500 font-bold">*</span>
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
+                Client Name <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <span className={`text-[10px] font-mono font-bold ${name.length > 60 ? "text-rose-500" : name.length > 50 ? "text-amber-500" : "text-zinc-400"}`}>
+                {name.length} / 60
+              </span>
+            </div>
             <input
               type="text"
               required
+              maxLength={60}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. John Doe"
@@ -388,17 +394,26 @@ export default function TestimonialsAdmin() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
-              Message <span className="text-rose-500 font-bold">*</span>
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
+                Message <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <span className={`text-[10px] font-mono font-bold ${message.length > 300 ? "text-rose-500" : message.length > 250 ? "text-amber-500" : "text-zinc-400"}`}>
+                {message.length} / 300
+              </span>
+            </div>
             <textarea
               required
               rows="4"
+              maxLength={300}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write the client testimonial here..."
               className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white font-medium resize-y min-h-[120px] leading-relaxed transition-all"
             />
+            <p className="text-[10px] text-zinc-400 font-semibold">
+              Maximum 300 characters allowed.
+            </p>
           </div>
 
           <div className="flex items-center justify-between border-t border-zinc-100 pt-5">
