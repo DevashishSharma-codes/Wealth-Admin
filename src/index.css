@@ -131,7 +131,7 @@
 
 /* Glass card — surface (inside modals) */
 .glass-surface {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.502);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.35);
