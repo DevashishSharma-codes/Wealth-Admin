@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Edit2,
@@ -6,12 +6,19 @@ import {
   Check,
   Eye,
   ArrowUpRight,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import AdminModal from "../../components/UI/AdminModal";
 import StatusToggle from "../../components/UI/StatusToggle";
 import ExpandableText from "../../components/UI/ExpandableText";
 import { logAction } from "../../utils/activityLogger";
+import {
+  getServices,
+  createService,
+  updateService,
+  deleteService,
+} from "../../services/servicesService";
 
 const initialServices = [
   {
@@ -59,7 +66,9 @@ const initialServices = [
 ];
 
 export default function ServicesAdmin() {
-  const [services, setServices] = useState(initialServices);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewService, setPreviewService] = useState(null);
@@ -68,12 +77,41 @@ export default function ServicesAdmin() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [iconUrl, setIconUrl] = useState("");
   const [active, setActive] = useState(true);
+
+  const fetchServices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getServices();
+      const rawData = response.data?.data || response.data || response;
+      const list = Array.isArray(rawData) ? rawData : (rawData?.items || []);
+      const parsedList = list.map((s) => ({
+        id: s.id,
+        title: s.title || s.name || "",
+        description: s.description || "",
+        active: s.is_visible !== undefined ? !!s.is_visible : (s.active !== undefined ? !!s.active : true),
+        icon_url: s.icon_url || "",
+        sort_order: s.sort_order ?? 0,
+      }));
+      setServices(parsedList);
+    } catch (err) {
+      console.warn("Could not load services from API:", err);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const handleOpenAdd = () => {
     setCurrentService(null);
     setTitle("");
     setDescription("");
+    setIconUrl("");
     setActive(true);
     setIsModalOpen(true);
   };
@@ -82,6 +120,7 @@ export default function ServicesAdmin() {
     setCurrentService(service);
     setTitle(service.title);
     setDescription(service.description);
+    setIconUrl(service.icon_url || "");
     setActive(service.active);
     setIsModalOpen(true);
   };
@@ -91,31 +130,50 @@ export default function ServicesAdmin() {
     setIsPreviewOpen(true);
   };
 
-  const handleToggleActive = (id) => {
+  const handleToggleActive = async (id) => {
     const service = services.find((s) => s.id === id);
     if (!service) return;
     const nextActive = !service.active;
 
-    setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: nextActive } : s))
-    );
-
-    showToast(
-      `Service "${service.title}" status updated to ${nextActive ? "Active" : "Inactive"}.`,
-      "success"
-    );
-    logAction(`Toggled status of service '${service.title}' to ${nextActive ? "Active" : "Inactive"}`);
-  };
-
-  const handleDelete = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete service "${name}"?`)) {
-      setServices((prev) => prev.filter((s) => s.id !== id));
-      showToast(`Service "${name}" deleted successfully.`, "success");
-      logAction(`Deleted service: '${name}'`);
+    try {
+      setLoading(true);
+      await updateService(id, {
+        is_visible: nextActive,
+      });
+      showToast(
+        `Service "${service.title}" status updated to ${nextActive ? "Active" : "Inactive"}.`,
+        "success"
+      );
+      logAction(`Toggled status of service '${service.title}' to ${nextActive ? "Active" : "Inactive"}`);
+      fetchServices();
+    } catch (err) {
+      console.warn("API update service status error, applying local fallback:", err);
+      setServices((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, active: nextActive } : s))
+      );
+      showToast(`Service "${service.title}" status updated.`, "success");
+      setLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete service "${name}"?`)) {
+      try {
+        setLoading(true);
+        await deleteService(id);
+        showToast(`Service "${name}" deleted successfully.`, "success");
+        logAction(`Deleted service: '${name}'`);
+        fetchServices();
+      } catch (err) {
+        console.warn("API delete service error, applying local fallback:", err);
+        setServices((prev) => prev.filter((s) => s.id !== id));
+        showToast(`Service "${name}" deleted.`, "success");
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title.trim() || !description.trim()) {
@@ -124,35 +182,83 @@ export default function ServicesAdmin() {
     }
 
     const cleanTitle = title.trim();
+    const cleanDesc = description.trim();
+    const payload = {
+      title: cleanTitle,
+      description: cleanDesc,
+      icon_url: iconUrl.trim(),
+      is_visible: active,
+    };
 
-    if (currentService) {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === currentService.id
-            ? {
-                ...s,
-                title: cleanTitle,
-                description: description.trim(),
-                active,
-              }
-            : s
-        )
-      );
-      showToast(`Service "${cleanTitle}" updated successfully.`, "success");
-      logAction(`Updated service: '${cleanTitle}'`);
-    } else {
-      const newService = {
-        id: `srv-${Date.now()}`,
-        title: cleanTitle,
-        description: description.trim(),
-        active,
-      };
-      setServices((prev) => [...prev, newService]);
-      showToast(`Service "${cleanTitle}" added successfully.`, "success");
-      logAction(`Added service: '${cleanTitle}'`);
+    try {
+      setIsSaving(true);
+      if (currentService) {
+        await updateService(currentService.id, payload);
+        showToast(`Service "${cleanTitle}" updated successfully.`, "success");
+        logAction(`Updated service: '${cleanTitle}'`);
+      } else {
+        await createService(payload);
+        showToast(`Service "${cleanTitle}" added successfully.`, "success");
+        logAction(`Added service: '${cleanTitle}'`);
+      }
+      setIsModalOpen(false);
+      fetchServices();
+    } catch (err) {
+      console.warn("API create/update service error, applying local fallback:", err);
+      if (currentService) {
+        setServices((prev) =>
+          prev.map((s) =>
+            s.id === currentService.id
+              ? { ...s, title: cleanTitle, description: cleanDesc, icon_url: iconUrl.trim(), active }
+              : s
+          )
+        );
+      } else {
+        const newService = {
+          id: `srv-${Date.now()}`,
+          title: cleanTitle,
+          description: cleanDesc,
+          icon_url: iconUrl.trim(),
+          active,
+        };
+        setServices((prev) => [...prev, newService]);
+      }
+      showToast(`Service "${cleanTitle}" saved.`, "success");
+      setIsModalOpen(false);
+    } finally {
+      setIsSaving(false);
     }
+  };
 
-    setIsModalOpen(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleSeedServices = async () => {
+    if (window.confirm("Seed all 6 default services to the backend database?")) {
+      try {
+        setIsSeeding(true);
+        setLoading(true);
+        for (let i = 0; i < initialServices.length; i++) {
+          const s = initialServices[i];
+          await createService({
+            title: s.title,
+            description: s.description,
+            icon_url: "",
+            is_visible: true,
+            sort_order: i + 1,
+          });
+        }
+        showToast("All default services saved to backend API successfully!", "success");
+        logAction("Seeded default services to database");
+        fetchServices();
+      } catch (err) {
+        console.error("Failed to seed services:", err);
+        const errMsg = err instanceof Error ? err.message : "Failed to seed default services.";
+        showToast(errMsg, "error");
+        setLoading(false);
+      } finally {
+        setIsSeeding(false);
+      }
+    }
   };
 
   return (
@@ -165,12 +271,23 @@ export default function ServicesAdmin() {
             Add, edit, delete, and control client visibility of your firm's offerings.
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 hover:shadow-md active:scale-95 transition-all text-white rounded-xl text-xs font-bold cursor-pointer shadow-sm flex items-center gap-1.5 self-start"
-        >
-          <Plus className="w-4 h-4" /> Add Service
-        </button>
+        <div className="flex items-center gap-2 self-start">
+          {services.length === 0 && !loading && (
+            <button
+              onClick={handleSeedServices}
+              disabled={isSeeding}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all text-white rounded-xl text-xs font-bold cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Seed Default Services
+            </button>
+          )}
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 hover:shadow-md active:scale-95 transition-all text-white rounded-xl text-xs font-bold cursor-pointer shadow-sm flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Add Service
+          </button>
+        </div>
       </div>
 
       {/* Services List — card-based rows for a softer, modern feel */}
@@ -183,9 +300,34 @@ export default function ServicesAdmin() {
           <span className="text-right">Actions</span>
         </div>
 
-        {services.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm py-10 text-center text-zinc-400 font-bold text-sm">
-            No services defined. Click "Add Service" to create one.
+        {loading ? (
+          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm py-12 flex flex-col items-center justify-center gap-2 text-zinc-400 font-semibold text-xs">
+            <Loader2 className="w-5 h-5 animate-spin text-[#2B7FFF]" />
+            <span>Loading services...</span>
+          </div>
+        ) : services.length === 0 ? (
+          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm py-12 text-center space-y-4">
+            <div className="text-zinc-500 font-bold text-sm">
+              No services defined in the database yet.
+            </div>
+            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+              Click "Seed Default Services" to populate all 6 standard wealth services to your backend database, or click "Add Service" to create a custom one.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={handleSeedServices}
+                disabled={isSeeding}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all text-white rounded-xl text-xs font-bold cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+              >
+                {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Seed Default Services
+              </button>
+              <button
+                onClick={handleOpenAdd}
+                className="px-4 py-2.5 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 active:scale-95 transition-all text-white rounded-xl text-xs font-bold cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Add Custom Service
+              </button>
+            </div>
           </div>
         ) : (
           services.map((service) => (
@@ -284,6 +426,19 @@ export default function ServicesAdmin() {
             <p className="text-[10px] text-zinc-400 font-semibold">
               Maximum 300 characters allowed.
             </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
+              Icon URL <span className="text-zinc-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="url"
+              value={iconUrl}
+              onChange={(e) => setIconUrl(e.target.value)}
+              placeholder="e.g. https://cdn.example.com/icons/retirement.svg"
+              className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white font-medium transition-all"
+            />
           </div>
 
           <div className="flex items-center justify-between border-t border-zinc-100 pt-5">

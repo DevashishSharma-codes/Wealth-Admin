@@ -79,13 +79,15 @@ export default function TestimonialsAdmin() {
   const fetchTestimonials = useCallback(async () => {
     try {
       const response = await getTestimonials();
-      const rawList = response.data || response;
-      const parsedList = (Array.isArray(rawList) ? rawList : (rawList?.items || [])).map((t) => ({
+      const rawData = response.data?.data || response.data || response;
+      const list = Array.isArray(rawData) ? rawData : (rawData?.items || []);
+      const parsedList = list.map((t) => ({
         id: t.id,
-        name: t.name || "",
-        message: t.message || "",
-        visible: t.visible !== undefined ? !!t.visible : !!t.is_visible,
-        avatar: t.avatar || "",
+        name: t.client_name || "",
+        message: t.review_message || "",
+        visible: !!t.is_visible,
+        avatar: t.avatar_url || "",
+        sort_order: t.sort_order ?? 0,
       }));
       setTestimonials(parsedList);
     } catch (err) {
@@ -144,11 +146,7 @@ export default function TestimonialsAdmin() {
     try {
       setLoading(true);
       await updateTestimonial(id, {
-        name: testimonial.name,
-        message: testimonial.message,
-        visible: nextVisible,
         is_visible: nextVisible,
-        avatar: testimonial.avatar || "",
       });
       showToast(
         `Testimonial by "${testimonial.name}" status updated to ${nextVisible ? "Visible" : "Hidden"}.`,
@@ -187,6 +185,12 @@ export default function TestimonialsAdmin() {
 
     const clientName = name.trim();
     const visibleCount = testimonials.filter((t) => t.visible).length;
+    const payload = {
+      client_name: clientName,
+      review_message: message.trim(),
+      avatar_url: avatarUrl.trim(),
+      is_visible: visible,
+    };
 
     try {
       setLoading(true);
@@ -203,13 +207,7 @@ export default function TestimonialsAdmin() {
           return;
         }
 
-        await updateTestimonial(currentTestimonial.id, {
-          name: clientName,
-          message: message.trim(),
-          visible,
-          is_visible: visible,
-          avatar: avatarUrl.trim(),
-        });
+        await updateTestimonial(currentTestimonial.id, payload);
         showToast(`Testimonial from "${clientName}" updated successfully.`, "success");
         logAction(`Updated testimonial from '${clientName}'`);
       } else {
@@ -222,13 +220,7 @@ export default function TestimonialsAdmin() {
           return;
         }
 
-        await createTestimonial({
-          name: clientName,
-          message: message.trim(),
-          visible,
-          is_visible: visible,
-          avatar: avatarUrl.trim(),
-        });
+        await createTestimonial(payload);
         showToast(`Testimonial from "${clientName}" added successfully.`, "success");
         logAction(`Added testimonial from '${clientName}'`);
       }
