@@ -83,17 +83,25 @@ export default function TestimonialsAdmin() {
       const list = Array.isArray(rawData) ? rawData : (rawData?.items || []);
       const parsedList = list.map((t) => ({
         id: t.id,
-        name: t.client_name || "",
-        message: t.review_message || "",
-        visible: !!t.is_visible,
-        avatar: t.avatar_url || "",
+        name: t.client_name || t.name || "",
+        message: t.review_message || t.message || "",
+        visible: t.is_visible !== undefined ? !!t.is_visible : (t.visible !== undefined ? !!t.visible : true),
+        avatar: t.avatar_url || t.avatar || "",
         sort_order: t.sort_order ?? 0,
       }));
       setTestimonials(parsedList);
+      if (parsedList.length > 0) {
+        localStorage.setItem("ww_admin_testimonials", JSON.stringify(parsedList));
+      }
     } catch (err) {
       console.error("Failed to load testimonials:", err);
-      const errMsg = err instanceof Error ? err.message : "Failed to load testimonials.";
-      showToast(errMsg, "error");
+      const cached = localStorage.getItem("ww_admin_testimonials");
+      if (cached) {
+        try { setTestimonials(JSON.parse(cached)); } catch (e) {}
+      } else {
+        const errMsg = err instanceof Error ? err.message : "Failed to load testimonials.";
+        showToast(errMsg, "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -133,23 +141,20 @@ export default function TestimonialsAdmin() {
 
     const visibleCount = testimonials.filter((t) => t.visible).length;
     const nextVisible = !testimonial.visible;
-
-    // Enforce max 3 visible testimonials (or exactly 3, but client requested max 3)
-    if (nextVisible && visibleCount >= 3) {
-      showToast(
-        "Cannot display this testimonial. A maximum of 3 visible testimonials is allowed. Please hide another testimonial first.",
-        "error"
-      );
-      return;
-    }
+    const nextVisibleCount = nextVisible ? visibleCount + 1 : visibleCount - 1;
 
     try {
       setLoading(true);
       await updateTestimonial(id, {
         is_visible: nextVisible,
       });
+
+      const multipleNote = nextVisibleCount % 3 === 0 && nextVisibleCount > 0
+        ? ` (${nextVisibleCount} visible - multiple of 3)`
+        : ` (${nextVisibleCount} visible - please use multiples of 3)`;
+
       showToast(
-        `Testimonial by "${testimonial.name}" status updated to ${nextVisible ? "Visible" : "Hidden"}.`,
+        `Testimonial by "${testimonial.name}" status updated to ${nextVisible ? "Visible" : "Hidden"}${multipleNote}.`,
         "success"
       );
       logAction(`Toggled visibility of testimonial from '${testimonial.name}' to ${nextVisible ? "Visible" : "Hidden"}`);
@@ -184,7 +189,6 @@ export default function TestimonialsAdmin() {
     }
 
     const clientName = name.trim();
-    const visibleCount = testimonials.filter((t) => t.visible).length;
     const payload = {
       client_name: clientName,
       review_message: message.trim(),
@@ -195,31 +199,10 @@ export default function TestimonialsAdmin() {
     try {
       setLoading(true);
       if (currentTestimonial) {
-        const otherVisibleCount = testimonials.filter(
-          (t) => t.visible && t.id !== currentTestimonial.id
-        ).length;
-        if (visible && otherVisibleCount >= 3) {
-          showToast(
-            "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
-            "error"
-          );
-          setLoading(false);
-          return;
-        }
-
         await updateTestimonial(currentTestimonial.id, payload);
         showToast(`Testimonial from "${clientName}" updated successfully.`, "success");
         logAction(`Updated testimonial from '${clientName}'`);
       } else {
-        if (visible && visibleCount >= 3) {
-          showToast(
-            "Cannot save. You already have 3 visible testimonials. Please hide another testimonial first, or save this one as hidden.",
-            "error"
-          );
-          setLoading(false);
-          return;
-        }
-
         await createTestimonial(payload);
         showToast(`Testimonial from "${clientName}" added successfully.`, "success");
         logAction(`Added testimonial from '${clientName}'`);
@@ -233,14 +216,22 @@ export default function TestimonialsAdmin() {
   };
 
 
+  const visibleCount = testimonials.filter((t) => t.visible).length;
+  const isMultipleOfThree = visibleCount > 0 && visibleCount % 3 === 0;
+
   return (
     <div className="ww-page space-y-6">
       {/* Header section */}
       <div className="ww-page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="ww-page-title">Manage Testimonials</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="ww-page-title">Manage Testimonials</h2>
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${isMultipleOfThree ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+              {visibleCount} Visible {isMultipleOfThree ? '✓ (Multiple of 3)' : '(Multiples of 3 recommended)'}
+            </span>
+          </div>
           <p className="ww-page-subtitle">
-            Publish, edit, delete, and control client feedback visible on your website.
+            Publish, edit, delete, and control client feedback visible on your website and PDF reports.
           </p>
         </div>
         <button
@@ -255,7 +246,7 @@ export default function TestimonialsAdmin() {
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-700 leading-relaxed max-w-6xl shadow-sm">
         <Info className="w-5 h-5 shrink-0 text-blue-500 mt-0.5" />
         <div>
-          <span className="font-bold">Important Note:</span> You may add as many testimonials as you like for record-keeping. However, <strong>exactly 3 testimonials must remain visible at all times</strong>.
+          <span className="font-bold">Important Note:</span> Please add testimonials in <strong>multiples of 3</strong> (e.g. 3, 6, 9, 12...).
         </div>
       </div>
 

@@ -95,9 +95,17 @@ export default function ServicesAdmin() {
         sort_order: s.sort_order ?? 0,
       }));
       setServices(parsedList);
+      if (parsedList.length > 0) {
+        localStorage.setItem("ww_admin_services", JSON.stringify(parsedList));
+      }
     } catch (err) {
       console.warn("Could not load services from API:", err);
-      setServices([]);
+      const cached = localStorage.getItem("ww_admin_services");
+      if (cached) {
+        try { setServices(JSON.parse(cached)); } catch (e) {}
+      } else {
+        setServices(initialServices);
+      }
     } finally {
       setLoading(false);
     }

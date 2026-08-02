@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Search, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet, FileText, TrendingUp, ChevronDown, X } from "lucide-react";
+import { Search, Eye, Calendar, Award, Briefcase, Heart, User, Download, Loader2, FileSpreadsheet, FileText, TrendingUp, ChevronDown, X, ClipboardList, Phone, Mail, ShieldCheck } from "lucide-react";
 
 const parseUtcDate = (dateStr) => {
   if (!dateStr) return new Date();
@@ -119,6 +119,7 @@ import { logAction } from "../../utils/activityLogger";
 
 const DETAIL_TABS = [
   { id: "overview", label: "Overview", icon: User },
+  { id: "all_details", label: "All Details", icon: ClipboardList },
   { id: "financials", label: "Financials", icon: Award },
   { id: "reports", label: "Reports", icon: FileText },
   { id: "activity", label: "Activity", icon: Calendar },
@@ -297,35 +298,45 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       console.log("[handleViewDetails] resData:", resData);
       console.log("[handleViewDetails] assessmentData:", assessmentData);
 
+      const f1 = assessmentData.flow1 || {};
+      const f2 = assessmentData.flow2 || {};
+      const f3 = assessmentData.flow3 || {};
+      const f4 = assessmentData.flow4 || {};
+      const f5 = assessmentData.flow5 || {};
+      const calc = assessmentData.calculation || {};
+
       const detailedUser = {
         id: assessmentData.assessment_id || user.id,
-        name: assessmentData.flow2?.client_name || user.name || "Anonymous Client",
+        name: f2.client_name || user.name || "Anonymous Client",
         role: "Planning Client",
-        occupation: assessmentData.flow2?.client_occupation || "N/A",
-        designation: assessmentData.flow2?.client_designation || "Client",
-        companyName: assessmentData.flow2?.client_company || "N/A",
-        dob: assessmentData.flow2?.client_dob ? new Date(assessmentData.flow2.client_dob).toLocaleDateString("en-IN") : "N/A",
-        age: assessmentData.flow2?.client_age ? `${assessmentData.flow2.client_age} Years` : "N/A",
-        maritalStatus: assessmentData.flow2?.spouse_name ? "Married" : "Single",
-        targetRetireAge: assessmentData.flow2?.client_retirement_age || 60,
+        occupation: f2.client_occupation || "N/A",
+        designation: f2.client_designation || "Client",
+        companyName: f2.client_company || "N/A",
+        dob: f2.client_dob ? new Date(f2.client_dob).toLocaleDateString("en-IN") : "N/A",
+        age: f2.client_age ? `${f2.client_age} Years` : "N/A",
+        maritalStatus: f2.spouse_name ? "Married" : "Single",
+        targetRetireAge: f2.client_retirement_age || 60,
 
-        email: assessmentData.flow1?.email || user.email || "N/A",
-        phone: assessmentData.flow1?.mobile || user.phone || "N/A",
-        address: assessmentData.flow1?.residential_address || "N/A",
-        consent: assessmentData.flow1?.consent ?? true,
+        email: f1.email || user.email || "N/A",
+        phone: f1.mobile || user.phone || "N/A",
+        address: f1.residential_address || "N/A",
+        spouseMobile: f1.spouse_mobile || "N/A",
+        spouseEmail: f1.spouse_email || "N/A",
+        consent: f1.consent ?? true,
 
-        spouseName: assessmentData.flow2?.spouse_name || "",
-        spouseAge: assessmentData.flow2?.spouse_age ? `${assessmentData.flow2.spouse_age} Years` : "N/A",
-        spouseOccupation: assessmentData.flow2?.spouse_occupation || "",
-        spouseDesignation: assessmentData.flow2?.spouse_designation || "",
-        spouseCompanyName: assessmentData.flow2?.spouse_company || "",
-        spouseDob: assessmentData.flow2?.spouse_dob || "",
+        spouseName: f2.spouse_name || "",
+        spouseAge: f2.spouse_age ? `${f2.spouse_age} Years` : "N/A",
+        spouseOccupation: f2.spouse_occupation || "",
+        spouseDesignation: f2.spouse_designation || "",
+        spouseCompanyName: f2.spouse_company || "",
+        spouseDob: f2.spouse_dob ? new Date(f2.spouse_dob).toLocaleDateString("en-IN") : "",
 
-        childrenCount: assessmentData.flow3?.number_of_children || 0,
-        children: (assessmentData.flow3?.children || []).map((c) => ({
-          name: c.full_name || "",
+        childrenCount: f3.number_of_children || (f3.children ? f3.children.length : 0),
+        children: (f3.children || []).map((c, idx) => ({
+          number: c.child_number || idx + 1,
+          name: c.full_name || c.child_name || c.name || `Child ${idx + 1}`,
           dob: c.date_of_birth ? new Date(c.date_of_birth).toLocaleDateString("en-IN") : "N/A",
-          age: c.calculated_age ? `${c.calculated_age} Years` : "N/A",
+          age: c.calculated_age ? `${c.calculated_age} Years` : (c.age ? `${c.age} Years` : "N/A"),
           occupation: c.occupation || "N/A",
           dependent: c.financially_dependent ?? true,
         })),
@@ -333,20 +344,39 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
         status: user.status,
         reportId: user.reportId,
 
-        goals: (assessmentData.flow4?.goals || []).map((g) => ({
-          id: g.id,
-          type: g.goal_type || "",
-          targetYear: g.target_year || "",
-          todaysCostRaw: g.today_cost || 0,
-          futureCostRaw: g.future_cost || 0,
-          todaysCost: g.today_cost ? `₹${g.today_cost.toLocaleString("en-IN")}` : "N/A",
-          futureCost: g.future_cost ? `₹${Math.round(g.future_cost).toLocaleString("en-IN")}` : "N/A",
-          monthlySip: g.monthly_sip ? `₹${Math.round(g.monthly_sip).toLocaleString("en-IN")}` : "N/A",
+        goals: (f4.goals || []).map((g, idx) => ({
+          id: g.id || `goal-${idx}`,
+          category: g.category || "lifestyle",
+          type: g.goal_type || g.type || "Financial Goal",
+          goalName: g.goal_name || g.name || "",
+          targetYear: g.target_year || g.year || "N/A",
+          todaysCostRaw: g.today_cost || g.todaysCost || 0,
+          futureCostRaw: g.future_cost || g.futureCost || 0,
+          todaysCost: (g.today_cost || g.todaysCost) ? `₹${(g.today_cost || g.todaysCost).toLocaleString("en-IN")}` : "N/A",
+          futureCost: (g.future_cost || g.futureCost) ? `₹${Math.round(g.future_cost || g.futureCost).toLocaleString("en-IN")}` : "N/A",
+          monthlySip: (g.monthly_sip || g.monthlySip) ? `₹${Math.round(g.monthly_sip || g.monthlySip).toLocaleString("en-IN")}` : "N/A",
           inflationRate: g.inflation_rate ? `${(g.inflation_rate * 100).toFixed(0)}%` : "6%",
-          progress: g.monthly_sip ? 100 : 0,
+          progress: (g.monthly_sip || g.monthlySip) ? 100 : 0,
+          childName: g.child_name || g.childName || "",
+          selectedColleges: g.selected_colleges || g.selectedColleges || [],
+          selectedDestinations: g.selected_destinations || g.selectedDestinations || []
         })),
 
-        calculation: assessmentData.calculation || null,
+        flow5: {
+          monthlyExpense: f5.monthly_expense || calc.client?.monthly_expense_today || user.monthlyExpense || "N/A",
+          requiredAnnualIncome: f5.required_annual_income || calc.client?.client_annual_ret_reqd || "N/A",
+          epfEmployer: f5.epf_employer || "N/A",
+          epfEmployee: f5.epf_employee || "N/A",
+          epfCorpus: f5.epf_corpus || calc.client?.projected_pf_corpus || "N/A",
+          npsEmployer: f5.nps_employer || "N/A",
+          npsEmployee: f5.nps_employee || "N/A",
+          npsCorpus: f5.nps_corpus || "N/A",
+          superEmployer: f5.super_employer || "N/A",
+          superCorpus: f5.super_corpus || "N/A",
+        },
+
+        rawAssessment: assessmentData,
+        calculation: calc.client ? calc : (assessmentData.calculation || null),
         reports: assessmentData.reports || [],
         activities: user.activities || [],
       };
@@ -990,10 +1020,10 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
 
                 {/* Segmented macOS-style tab bar (sticky) */}
                 <div className="sticky top-0 z-10 pt-1 pb-1 ww-card-in" style={{ animationDelay: "60ms" }}>
-                  <div className="relative grid grid-cols-4 gap-1 p-1 rounded-2xl bg-zinc-200/50 ww-glass-tint">
+                  <div className="relative grid grid-cols-5 gap-1 p-1 rounded-2xl bg-zinc-200/50 ww-glass-tint">
                     <div
                       className="absolute top-1 bottom-1 rounded-xl bg-white/80 backdrop-blur-md shadow-[0_2px_10px_rgba(15,23,42,0.14)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                      style={{ left: `calc(${activeTabIndex} * 25% + 4px)`, width: "calc(25% - 8px)" }}
+                      style={{ left: `calc(${activeTabIndex} * 20% + 4px)`, width: "calc(20% - 8px)" }}
                     />
                     {DETAIL_TABS.map((tab) => {
                       const Icon = tab.icon;
@@ -1047,6 +1077,8 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                                 ["Email Address", selectedUser.email],
                                 ["Primary Phone", selectedUser.phone],
                                 ["Mailing Address", selectedUser.address],
+                                ["Spouse Phone", selectedUser.spouseMobile],
+                                ["Spouse Email", selectedUser.spouseEmail],
                                 ["Consent Checked", selectedUser.consent ? "Yes" : "No"],
                               ].map(([label, value]) => (
                                 <div key={label} className="ww-row-hover flex justify-between items-center py-1.5 px-2 -mx-2 rounded-lg hover:bg-white/40">
@@ -1118,6 +1150,183 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                             No family or dependent information registered.
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* ---------------- ALL FILLED DETAILS TAB ---------------- */}
+                    {activeTab === "all_details" && (
+                      <div className="space-y-4">
+                        {/* STEP 1: COMMUNICATION DETAILS */}
+                        <div className="ww-glass ww-card-in rounded-[22px] p-5 space-y-3">
+                          <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center justify-between border-b border-zinc-200/60 pb-2.5 ww-heading">
+                            <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> Step 1: Communication Details</span>
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">✓ Intake Saved</span>
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Client Phone</span>
+                              <span className="font-bold text-zinc-800">{selectedUser.phone}</span>
+                            </div>
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Client Email</span>
+                              <span className="font-bold text-zinc-800 break-all">{selectedUser.email}</span>
+                            </div>
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5 sm:col-span-2">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Residential Address</span>
+                              <span className="font-bold text-zinc-800">{selectedUser.address}</span>
+                            </div>
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Spouse Phone</span>
+                              <span className="font-bold text-zinc-800">{selectedUser.spouseMobile}</span>
+                            </div>
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Spouse Email</span>
+                              <span className="font-bold text-zinc-800 break-all">{selectedUser.spouseEmail}</span>
+                            </div>
+                            <div className="ww-chip p-3 rounded-xl space-y-0.5 sm:col-span-2">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Consent Given</span>
+                              <span className="font-bold text-emerald-600">{selectedUser.consent ? "Yes (Consent Checked)" : "No"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* STEP 2: PERSONAL & SPOUSE DETAILS */}
+                        <div className="ww-glass ww-card-in rounded-[22px] p-5 space-y-3">
+                          <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center justify-between border-b border-zinc-200/60 pb-2.5 ww-heading">
+                            <span className="flex items-center gap-1.5"><User className="w-4 h-4" /> Step 2: Personal & Spouse Details</span>
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">✓ Profile Saved</span>
+                          </h4>
+                          <div className="space-y-3">
+                            <div className="ww-chip p-3.5 rounded-2xl border-l-[3px] border-l-[#2B7FFF] text-xs space-y-2">
+                              <span className="text-[10px] font-extrabold text-[#2B7FFF] uppercase tracking-wider block">Client Profile</span>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div><span className="text-zinc-400 text-[10px] block">Full Name</span><span className="font-bold text-zinc-800">{selectedUser.name}</span></div>
+                                <div><span className="text-zinc-400 text-[10px] block">Date of Birth & Age</span><span className="font-bold text-zinc-800">{selectedUser.dob} ({selectedUser.age})</span></div>
+                                <div><span className="text-zinc-400 text-[10px] block">Occupation & Designation</span><span className="font-bold text-zinc-800">{selectedUser.occupation} - {selectedUser.designation}</span></div>
+                                <div><span className="text-zinc-400 text-[10px] block">Company Name</span><span className="font-bold text-zinc-800">{selectedUser.companyName}</span></div>
+                                <div><span className="text-zinc-400 text-[10px] block">Target Retirement Age</span><span className="font-bold text-[#2B7FFF]">{selectedUser.targetRetireAge} Years</span></div>
+                                <div><span className="text-zinc-400 text-[10px] block">Marital Status</span><span className="font-bold text-zinc-800">{selectedUser.maritalStatus}</span></div>
+                              </div>
+                            </div>
+
+                            {selectedUser.spouseName ? (
+                              <div className="ww-chip p-3.5 rounded-2xl border-l-[3px] border-l-rose-400 text-xs space-y-2">
+                                <span className="text-[10px] font-extrabold text-rose-500 uppercase tracking-wider block">Spouse Profile</span>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div><span className="text-zinc-400 text-[10px] block">Full Name</span><span className="font-bold text-zinc-800">{selectedUser.spouseName}</span></div>
+                                  <div><span className="text-zinc-400 text-[10px] block">Date of Birth & Age</span><span className="font-bold text-zinc-800">{selectedUser.spouseDob || "N/A"} ({selectedUser.spouseAge})</span></div>
+                                  <div><span className="text-zinc-400 text-[10px] block">Occupation & Designation</span><span className="font-bold text-zinc-800">{selectedUser.spouseOccupation || "N/A"} {selectedUser.spouseDesignation && `- ${selectedUser.spouseDesignation}`}</span></div>
+                                  <div><span className="text-zinc-400 text-[10px] block">Company Name</span><span className="font-bold text-zinc-800">{selectedUser.spouseCompanyName || "N/A"}</span></div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-zinc-400 italic px-2">No spouse details recorded (Single status).</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* STEP 3: FAMILY & DEPENDENTS */}
+                        <div className="ww-glass ww-card-in rounded-[22px] p-5 space-y-3">
+                          <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center justify-between border-b border-zinc-200/60 pb-2.5 ww-heading">
+                            <span className="flex items-center gap-1.5"><Heart className="w-4 h-4" /> Step 3: Children & Family ({selectedUser.childrenCount})</span>
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">✓ Children Registered</span>
+                          </h4>
+                          {selectedUser.childrenCount > 0 && selectedUser.children && selectedUser.children.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                              {selectedUser.children.map((c, idx) => (
+                                <div key={idx} className="ww-chip p-3.5 rounded-2xl border-l-[3px] border-l-[#2B7FFF] text-xs space-y-1.5">
+                                  <div className="flex justify-between items-center font-bold">
+                                    <span className="text-zinc-800">{c.name}</span>
+                                    <span className="bg-[#2B7FFF]/10 text-[#2B7FFF] px-2 py-0.5 rounded-md text-[10px]">{c.age}</span>
+                                  </div>
+                                  <div className="text-[10px] text-zinc-500 space-y-0.5">
+                                    <div>DOB: <span className="font-bold text-zinc-700">{c.dob}</span></div>
+                                    <div>Occupation: <span className="font-bold text-zinc-700">{c.occupation}</span></div>
+                                    <div>Dependency: <span className="font-bold text-zinc-700">{c.dependent ? "Financially Dependent" : "Independent"}</span></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-zinc-400 italic">No children registered in Step 3.</div>
+                          )}
+                        </div>
+
+                        {/* STEP 4: LIFESTYLE & CHILD GOALS */}
+                        <div className="ww-glass ww-card-in rounded-[22px] p-5 space-y-3">
+                          <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center justify-between border-b border-zinc-200/60 pb-2.5 ww-heading">
+                            <span className="flex items-center gap-1.5"><Award className="w-4 h-4" /> Step 4: Goals ({selectedUser.goals ? selectedUser.goals.length : 0})</span>
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">✓ Goals Saved</span>
+                          </h4>
+                          {selectedUser.goals && selectedUser.goals.length > 0 ? (
+                            <div className="space-y-3">
+                              {selectedUser.goals.map((g, idx) => (
+                                <div key={idx} className="ww-chip p-4 rounded-2xl border-l-[3px] border-l-purple-500 text-xs space-y-2">
+                                  <div className="flex justify-between items-center font-bold">
+                                    <span className="text-purple-700 text-sm">{g.type} {g.goalName ? `(${g.goalName})` : ''}</span>
+                                    <span className="bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full text-[11px]">Target Year: {g.targetYear}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1">
+                                    <div><span className="text-zinc-400 block text-[9px] uppercase">Today's Cost</span><span className="font-bold text-zinc-800">{g.todaysCost}</span></div>
+                                    <div><span className="text-zinc-400 block text-[9px] uppercase">Inflation Rate</span><span className="font-bold text-zinc-800">{g.inflationRate}</span></div>
+                                    <div><span className="text-zinc-400 block text-[9px] uppercase">Future Cost</span><span className="font-bold text-zinc-800">{g.futureCost}</span></div>
+                                    <div><span className="text-zinc-400 block text-[9px] uppercase">Monthly SIP Req</span><span className="font-bold text-[#2B7FFF]">{g.monthlySip}</span></div>
+                                  </div>
+                                  {g.childName && (
+                                    <div className="text-[10px] text-purple-600 font-semibold pt-1 border-t border-zinc-200/60">
+                                      Associated Child: <span className="font-bold text-zinc-800">{g.childName}</span>
+                                    </div>
+                                  )}
+                                  {g.selectedColleges && g.selectedColleges.length > 0 && (
+                                    <div className="text-[10px] text-zinc-500 pt-1 border-t border-zinc-200/60">
+                                      <span className="font-bold text-zinc-700">Selected Colleges / Universities:</span> {g.selectedColleges.map(c => typeof c === 'object' ? c.name : c).join(', ')}
+                                    </div>
+                                  )}
+                                  {g.selectedDestinations && g.selectedDestinations.length > 0 && (
+                                    <div className="text-[10px] text-zinc-500 pt-1 border-t border-zinc-200/60">
+                                      <span className="font-bold text-zinc-700">Selected Tour Destinations:</span> {g.selectedDestinations.map(d => typeof d === 'object' ? d.name : d).join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-zinc-400 italic">No specific goals added in Step 4.</div>
+                          )}
+                        </div>
+
+                        {/* STEP 5: RETIREMENT & ACCUMULATED PROVISIONS */}
+                        <div className="ww-glass ww-card-in rounded-[22px] p-5 space-y-3">
+                          <h4 className="text-xs font-bold text-[#2B7FFF] uppercase tracking-wider flex items-center justify-between border-b border-zinc-200/60 pb-2.5 ww-heading">
+                            <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Step 5: Retirement & Provisions Savings</span>
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">✓ Provisions Saved</span>
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div className="ww-chip p-3.5 rounded-xl space-y-1">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Monthly Household Expense</span>
+                              <span className="font-extrabold text-zinc-800 text-sm">{getDisplayVal(selectedUser.flow5?.monthlyExpense)}</span>
+                            </div>
+                            <div className="ww-chip p-3.5 rounded-xl space-y-1">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Required Annual Income</span>
+                              <span className="font-extrabold text-zinc-800 text-sm">{getDisplayVal(selectedUser.flow5?.requiredAnnualIncome)}</span>
+                            </div>
+                            <div className="ww-chip p-3.5 rounded-xl space-y-1">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">EPF Total Corpus</span>
+                              <span className="font-extrabold text-emerald-700 text-sm">{getDisplayVal(selectedUser.flow5?.epfCorpus)}</span>
+                              <span className="text-[9px] text-zinc-400 block">Employer: {getDisplayVal(selectedUser.flow5?.epfEmployer)} · Employee: {getDisplayVal(selectedUser.flow5?.epfEmployee)}</span>
+                            </div>
+                            <div className="ww-chip p-3.5 rounded-xl space-y-1">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">NPS Total Corpus</span>
+                              <span className="font-extrabold text-emerald-700 text-sm">{getDisplayVal(selectedUser.flow5?.npsCorpus)}</span>
+                              <span className="text-[9px] text-zinc-400 block">Employer: {getDisplayVal(selectedUser.flow5?.npsEmployer)} · Employee: {getDisplayVal(selectedUser.flow5?.npsEmployee)}</span>
+                            </div>
+                            <div className="ww-chip p-3.5 rounded-xl space-y-1 sm:col-span-2">
+                              <span className="text-[10px] font-bold text-zinc-400 block uppercase">Superannuation / SA Total Corpus</span>
+                              <span className="font-extrabold text-emerald-700 text-sm">{getDisplayVal(selectedUser.flow5?.superCorpus)}</span>
+                              <span className="text-[9px] text-zinc-400 block">Employer Share: {getDisplayVal(selectedUser.flow5?.superEmployer)}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
