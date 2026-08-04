@@ -826,7 +826,7 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
       {/* ================================================= */}
       {(selectedUser || isClosing) && createPortal(
         <div
-          className="fixed inset-0 z-50 flex justify-end ww-drawer-root"
+          className="fixed inset-0 z-[100] flex justify-end ww-drawer-root"
           style={{ "--genie-x": genieOrigin.x, "--genie-y": genieOrigin.y }}
         >
           <style>{`
@@ -1018,11 +1018,11 @@ export default function UsersList({ globalSearch = "", setGlobalSearch = () => {
                   </div>
                 </div>
 
-                {/* Segmented macOS-style tab bar (sticky) */}
-                <div className="sticky top-0 z-10 pt-1 pb-1 ww-card-in" style={{ animationDelay: "60ms" }}>
-                  <div className="relative grid grid-cols-5 gap-1 p-1 rounded-2xl bg-zinc-200/50 ww-glass-tint">
+                {/* Segmented macOS-style tab bar (sticky sub-nav) */}
+                <div className="sticky top-0 z-20 pt-2 pb-2 -mx-5 px-5 bg-[#F6F7FA]/95 backdrop-blur-md border-b border-zinc-200/50 ww-card-in" style={{ animationDelay: "60ms" }}>
+                  <div className="relative grid grid-cols-5 gap-1 p-1 rounded-2xl bg-zinc-200/80 shadow-inner">
                     <div
-                      className="absolute top-1 bottom-1 rounded-xl bg-white/80 backdrop-blur-md shadow-[0_2px_10px_rgba(15,23,42,0.14)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                      className="absolute top-1 bottom-1 rounded-xl bg-white shadow-[0_2px_10px_rgba(15,23,42,0.14)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                       style={{ left: `calc(${activeTabIndex} * 20% + 4px)`, width: "calc(20% - 8px)" }}
                     />
                     {DETAIL_TABS.map((tab) => {

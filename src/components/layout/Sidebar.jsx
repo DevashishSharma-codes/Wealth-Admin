@@ -56,22 +56,22 @@ export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCol
         } w-64`}
     >
       {/* Title / Logo Header */}
-      <div className="h-16 flex items-center px-4 justify-between border-b border-zinc-100">
+      <div className="h-16 flex items-center px-4 justify-between border-b border-zinc-100 overflow-hidden relative">
         {(!isCollapsed || isMobileOpen) && (
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Wealth Wisdom" className="h-9 w-auto object-contain shrink-0" />
-            <div className="border-l border-zinc-200 pl-2.5">
-              <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider block">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <img src="/logo.png" alt="Wealth Wisdom" className="h-8 max-w-[130px] object-contain shrink-0" />
+            <div className="border-l border-zinc-200 pl-2 shrink-0">
+              <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider block leading-tight">
                 Enterprise
               </span>
-              <span className="text-[9px] text-[#2B7FFF] font-bold uppercase tracking-wider block -mt-0.5">
+              <span className="text-[9px] text-[#2B7FFF] font-bold uppercase tracking-wider block leading-tight">
                 Admin
               </span>
             </div>
           </div>
         )}
         {(isCollapsed && !isMobileOpen) && (
-          <img src="/logo.png" alt="WW" className="w-8 h-8 object-contain mx-auto" />
+          <img src="/logo.png" alt="WW" className="h-8 w-8 object-contain mx-auto" />
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}

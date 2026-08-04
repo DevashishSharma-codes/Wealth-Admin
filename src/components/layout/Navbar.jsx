@@ -141,7 +141,7 @@ export default function Navbar({ activeTab, setActiveTab, globalSearch, setGloba
           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
             Wealth Wisdom Platform
           </p>
-          <h1 className="text-xs font-bold text-zinc-700 md:hidden -mt-0.5">
+          <h1 className="text-xs font-bold text-zinc-700 -mt-0.5">
             {getPageTitle()}
           </h1>
         </div>
