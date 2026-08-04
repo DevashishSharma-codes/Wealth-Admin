@@ -21,6 +21,8 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ChevronUp,
+  X,
+  Minus,
 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import {
@@ -339,11 +341,41 @@ export default function ReportEmailTemplateManager() {
             {/* macOS Window Title bar with Traffic Lights */}
             <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {/* Traffic lights */}
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40" />
-                  <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40" />
-                  <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40" />
+                {/* Interactive macOS Window Traffic Lights for Composer */}
+                <div className="flex items-center gap-1.5 group/traffic">
+                  {/* Red: Exit Focus / Reset Form */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (viewMode !== "split") {
+                        setViewMode("split");
+                      } else {
+                        setShowResetModal(true);
+                      }
+                    }}
+                    className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer"
+                    title={viewMode !== "split" ? "Exit Focus (Restore Split View)" : "Reset Template to System Defaults"}
+                  >
+                    <X className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
+                  {/* Yellow: Minimize Panel */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode(viewMode === "preview" ? "split" : "preview")}
+                    className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer"
+                    title={viewMode === "preview" ? "Restore Split View" : "Minimize Composer Panel"}
+                  >
+                    <Minus className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
+                  {/* Green: Maximize Panel */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode(viewMode === "editor" ? "split" : "editor")}
+                    className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer"
+                    title={viewMode === "editor" ? "Restore Split View" : "Maximize Composer Panel"}
+                  >
+                    <Maximize2 className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
                 </div>
                 <div className="h-4 w-px bg-zinc-200/80" />
                 <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -529,10 +561,43 @@ export default function ReportEmailTemplateManager() {
             {/* macOS Window Header & Device Toggle */}
             <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40" />
-                  <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40" />
-                  <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40" />
+                {/* Interactive macOS Window Traffic Lights for Live Preview */}
+                <div className="flex items-center gap-1.5 group/traffic">
+                  {/* Red: Exit Focus / Reset Sample Data */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (viewMode !== "split") {
+                        setViewMode("split");
+                      } else {
+                        setPreviewClientName("Rahul Sharma");
+                        setPreviewClientEmail("client@example.com");
+                        showToast("Reset sample client data", "info");
+                      }
+                    }}
+                    className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer"
+                    title={viewMode !== "split" ? "Exit Focus (Restore Split View)" : "Reset Sample Client Data"}
+                  >
+                    <X className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
+                  {/* Yellow: Minimize Panel */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode(viewMode === "editor" ? "split" : "editor")}
+                    className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer"
+                    title={viewMode === "editor" ? "Restore Split View" : "Minimize Preview Panel"}
+                  >
+                    <Minus className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
+                  {/* Green: Maximize Panel */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode(viewMode === "preview" ? "split" : "preview")}
+                    className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer"
+                    title={viewMode === "preview" ? "Restore Split View" : "Maximize Preview Panel"}
+                  >
+                    <Maximize2 className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                  </button>
                 </div>
                 <div className="h-4 w-px bg-zinc-200/80" />
                 <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
