@@ -65,6 +65,34 @@ export default function ReportEmailTemplateManager() {
   // Device Preview Mode: 'desktop' | 'mobile'
   const [deviceMode, setDeviceMode] = useState("desktop");
 
+  const composerCardRef = useRef(null);
+  const previewCardRef = useRef(null);
+
+  const toggleSectionFullscreen = (elementRef, targetMode) => {
+    if (!document.fullscreenElement) {
+      if (elementRef.current && elementRef.current.requestFullscreen) {
+        elementRef.current.requestFullscreen().catch(() => {
+          document.documentElement.requestFullscreen().catch(() => {});
+        });
+      } else {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      setViewMode(targetMode);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setViewMode("split");
+    }
+  };
+
+  const exitFullscreenAndNormalize = () => {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setViewMode("split");
+  };
+
   // Sample values for Live Preview
   const [sampleClientName, setSampleClientName] = useState("Rahul Sharma");
   const [sampleAttachmentName, setSampleAttachmentName] = useState("Wealth_Wisdom_Goal_Report.pdf");
@@ -334,53 +362,61 @@ export default function ReportEmailTemplateManager() {
         {/* Left Column: Form Editor Window */}
         {(viewMode === "split" || viewMode === "editor") && (
           <div
-            className={`mac-window rounded-2xl p-5 md:p-6 shadow-2xl space-y-5 transition-all ${
-              viewMode === "split" ? "xl:col-span-7" : "w-full max-w-4xl mx-auto"
+            ref={composerCardRef}
+            className={`mac-window rounded-3xl p-6 md:p-8 space-y-6 transition-all duration-300 ${
+              viewMode === "split"
+                ? "xl:col-span-7 shadow-xl border border-white/60 bg-white/80 backdrop-blur-xl"
+                : "w-full max-w-5xl mx-auto shadow-2xl bg-white/95 backdrop-blur-3xl border border-white ring-1 ring-black/5 animate-fade-in"
             }`}
           >
             {/* macOS Window Title bar with Traffic Lights */}
-            <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
+            <div className="border-b border-zinc-200/60 pb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Interactive macOS Window Traffic Lights for Composer */}
                 <div className="flex items-center gap-1.5 group/traffic">
-                  {/* Red: Exit Focus / Reset Form */}
+                  {/* Red: Close Focus Mode / Reset Form */}
                   <button
                     type="button"
                     onClick={() => {
-                      if (viewMode !== "split") {
-                        setViewMode("split");
+                      if (viewMode !== "split" || document.fullscreenElement) {
+                        exitFullscreenAndNormalize();
                       } else {
                         setShowResetModal(true);
                       }
                     }}
-                    className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer"
-                    title={viewMode !== "split" ? "Exit Focus (Restore Split View)" : "Reset Template to System Defaults"}
+                    className="w-3.5 h-3.5 rounded-full bg-[#FF5F56] border border-[#E0443E]/50 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer shadow-xs"
+                    title={viewMode !== "split" ? "Close Full Screen Focus Mode" : "Reset Template to System Defaults"}
                   >
-                    <X className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <X className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
-                  {/* Yellow: Minimize Panel */}
+                  {/* Yellow: Minimize to Normal Screen */}
                   <button
                     type="button"
-                    onClick={() => setViewMode(viewMode === "preview" ? "split" : "preview")}
-                    className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer"
-                    title={viewMode === "preview" ? "Restore Split View" : "Minimize Composer Panel"}
+                    onClick={exitFullscreenAndNormalize}
+                    className="w-3.5 h-3.5 rounded-full bg-[#FFBD2E] border border-[#DEA123]/50 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer shadow-xs"
+                    title="Minimize to Normal Screen"
                   >
-                    <Minus className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <Minus className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
-                  {/* Green: Maximize Panel */}
+                  {/* Green: Maximize / Open Section in Full Screen */}
                   <button
                     type="button"
-                    onClick={() => setViewMode(viewMode === "editor" ? "split" : "editor")}
-                    className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer"
-                    title={viewMode === "editor" ? "Restore Split View" : "Maximize Composer Panel"}
+                    onClick={() => toggleSectionFullscreen(composerCardRef, "editor")}
+                    className="w-3.5 h-3.5 rounded-full bg-[#27C93F] border border-[#1AAB29]/50 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer shadow-xs"
+                    title="Maximize Section in Full Screen Mode"
                   >
-                    <Maximize2 className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <Maximize2 className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
                 </div>
                 <div className="h-4 w-px bg-zinc-200/80" />
-                <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileEdit className="w-3.5 h-3.5 text-[#2B7FFF]" /> Template Composer
+                <span className="text-xs font-extrabold text-zinc-800 uppercase tracking-wider flex items-center gap-2">
+                  <FileEdit className="w-4 h-4 text-[#2B7FFF]" /> Template Composer
                 </span>
+                {viewMode === "editor" && (
+                  <span className="text-[9.5px] font-bold text-[#007AFF] bg-[#007AFF]/10 border border-[#007AFF]/25 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline">
+                    Full Screen Mode
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -554,55 +590,62 @@ export default function ReportEmailTemplateManager() {
         {/* Right Column: Interactive Live Preview Window */}
         {(viewMode === "split" || viewMode === "preview") && (
           <div
-            className={`mac-window rounded-2xl p-5 md:p-6 shadow-2xl space-y-4 transition-all ${
-              viewMode === "split" ? "xl:col-span-5" : "w-full max-w-4xl mx-auto"
+            ref={previewCardRef}
+            className={`mac-window rounded-3xl p-6 md:p-8 space-y-5 transition-all duration-300 ${
+              viewMode === "split"
+                ? "xl:col-span-5 shadow-xl border border-white/60 bg-white/80 backdrop-blur-xl"
+                : "w-full max-w-5xl mx-auto shadow-2xl bg-white/95 backdrop-blur-3xl border border-white ring-1 ring-black/5 animate-fade-in"
             }`}
           >
             {/* macOS Window Header & Device Toggle */}
-            <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
+            <div className="border-b border-zinc-200/60 pb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Interactive macOS Window Traffic Lights for Live Preview */}
                 <div className="flex items-center gap-1.5 group/traffic">
-                  {/* Red: Exit Focus / Reset Sample Data */}
+                  {/* Red: Close Focus / Reset Sample Data */}
                   <button
                     type="button"
                     onClick={() => {
-                      if (viewMode !== "split") {
-                        setViewMode("split");
+                      if (viewMode !== "split" || document.fullscreenElement) {
+                        exitFullscreenAndNormalize();
                       } else {
-                        setPreviewClientName("Rahul Sharma");
-                        setPreviewClientEmail("client@example.com");
+                        setSampleClientName("Rahul Sharma");
                         showToast("Reset sample client data", "info");
                       }
                     }}
-                    className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer"
-                    title={viewMode !== "split" ? "Exit Focus (Restore Split View)" : "Reset Sample Client Data"}
+                    className="w-3.5 h-3.5 rounded-full bg-[#FF5F56] border border-[#E0443E]/50 flex items-center justify-center text-[#4C0000] hover:bg-[#E0443E] transition-all cursor-pointer shadow-xs"
+                    title={viewMode !== "split" ? "Close Full Screen Focus Mode" : "Reset Sample Client Data"}
                   >
-                    <X className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <X className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
-                  {/* Yellow: Minimize Panel */}
+                  {/* Yellow: Minimize to Normal Screen */}
                   <button
                     type="button"
-                    onClick={() => setViewMode(viewMode === "editor" ? "split" : "editor")}
-                    className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer"
-                    title={viewMode === "editor" ? "Restore Split View" : "Minimize Preview Panel"}
+                    onClick={exitFullscreenAndNormalize}
+                    className="w-3.5 h-3.5 rounded-full bg-[#FFBD2E] border border-[#DEA123]/50 flex items-center justify-center text-[#5C4000] hover:bg-[#DEA123] transition-all cursor-pointer shadow-xs"
+                    title="Minimize to Normal Screen"
                   >
-                    <Minus className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <Minus className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
-                  {/* Green: Maximize Panel */}
+                  {/* Green: Open Section in Full Screen */}
                   <button
                     type="button"
-                    onClick={() => setViewMode(viewMode === "preview" ? "split" : "preview")}
-                    className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer"
-                    title={viewMode === "preview" ? "Restore Split View" : "Maximize Preview Panel"}
+                    onClick={() => toggleSectionFullscreen(previewCardRef, "preview")}
+                    className="w-3.5 h-3.5 rounded-full bg-[#27C93F] border border-[#1AAB29]/50 flex items-center justify-center text-[#0A4D00] hover:bg-[#1AAB29] transition-all cursor-pointer shadow-xs"
+                    title="Maximize Section in Full Screen Mode"
                   >
-                    <Maximize2 className="w-2 h-2 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
+                    <Maximize2 className="w-2.5 h-2.5 opacity-0 group-hover/traffic:opacity-100 transition-opacity stroke-[3]" />
                   </button>
                 </div>
                 <div className="h-4 w-px bg-zinc-200/80" />
-                <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[#2B7FFF]" /> Live Client Preview
+                <span className="text-xs font-extrabold text-zinc-800 uppercase tracking-wider flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-[#2B7FFF]" /> Live Client Preview
                 </span>
+                {viewMode === "preview" && (
+                  <span className="text-[9.5px] font-bold text-[#007AFF] bg-[#007AFF]/10 border border-[#007AFF]/25 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline">
+                    Full Screen Mode
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
