@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import { sendCampaign, getRecipients } from "../../services/marketingService";
+import ReportEmailTemplateManager from "./ReportEmailTemplateManager";
 
 /**
  * Floating recipients control.
@@ -184,6 +185,7 @@ function RecipientsDropdown({ recipients, count, onRecipientClick }) {
 }
 
 export default function EmailMarketing() {
+  const [activeEmailTab, setActiveEmailTab] = useState("template"); // "template" or "marketing"
   const [subject, setSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -337,16 +339,51 @@ export default function EmailMarketing() {
   };
 
   return (
-    <div className="ww-page">
-      {/* Page Header */}
-      <div className="ww-page-header">
-        <div>
-          <h2 className="ww-page-title">Email & Marketing Campaign</h2>
-          <p className="ww-page-subtitle">Author and dispatch customized campaigns directly to users.</p>
+    <div className="ww-page space-y-6">
+      {/* Page Header with Tab Switcher */}
+      <div className="ww-page-header border-b border-zinc-200/80 pb-4 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="ww-page-title">Email & Marketing</h2>
+            <p className="ww-page-subtitle">
+              Manage automated PDF report email templates and dispatch promotional campaigns.
+            </p>
+          </div>
+
+          <div className="flex items-center bg-zinc-100 p-1 rounded-xl border border-zinc-200 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveEmailTab("template")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeEmailTab === "template"
+                  ? "bg-white text-[#2B7FFF] shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-800"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Report Email Template</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveEmailTab("marketing")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeEmailTab === "marketing"
+                  ? "bg-white text-[#2B7FFF] shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-800"
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Broadcast Campaign</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      {activeEmailTab === "template" ? (
+        <ReportEmailTemplateManager />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Editor Form Panel */}
         <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-xs space-y-4">
           <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
@@ -557,6 +594,7 @@ export default function EmailMarketing() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
