@@ -319,3 +319,68 @@
 .ww-richtext-preview em {
   font-style: italic !important;
 }
+
+/* ── macOS Glassmorphism Window & Container Utilities ── */
+.mac-window {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.07),
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.mac-window-subtle {
+  background: rgba(250, 250, 252, 0.65);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.mac-chip {
+  background: rgba(243, 244, 246, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mac-chip:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(43, 127, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(43, 127, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.mac-segmented-bg {
+  background: rgba(229, 231, 235, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Mobile Preview Frame */
+.iphone-frame {
+  width: 315px;
+  height: 600px;
+  max-height: 80vh;
+  margin: 0 auto;
+  border-radius: 40px;
+  box-shadow: 
+    0 0 0 9px #1e293b,
+    0 0 0 11px #334155,
+    0 20px 45px -10px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.iphone-screen {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}

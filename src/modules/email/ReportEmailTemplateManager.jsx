@@ -12,7 +12,15 @@ import {
   UserCheck,
   AlertCircle,
   Code,
-  Sparkles,
+  FileEdit,
+  Columns,
+  Maximize2,
+  Smartphone,
+  Monitor,
+  Copy,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
 import {
@@ -49,15 +57,26 @@ export default function ReportEmailTemplateManager() {
     updatedAt: null,
   });
 
+  // Responsive Layout Mode: 'split' | 'editor' | 'preview'
+  const [viewMode, setViewMode] = useState("split");
+
+  // Device Preview Mode: 'desktop' | 'mobile'
+  const [deviceMode, setDeviceMode] = useState("desktop");
+
   // Sample values for Live Preview
   const [sampleClientName, setSampleClientName] = useState("Rahul Sharma");
   const [sampleAttachmentName, setSampleAttachmentName] = useState("Wealth_Wisdom_Goal_Report.pdf");
+  const [showSampleControls, setShowSampleControls] = useState(false);
+
+  // Variable helper drawer state
+  const [showVariablesDrawer, setShowVariablesDrawer] = useState(false);
+  const [copiedTag, setCopiedTag] = useState(null);
 
   const [apiError, setApiError] = useState(null);
-  const [activeTab, setActiveTab] = useState("editor"); // 'editor' or 'json'
 
   const subjectInputRef = useRef(null);
   const bodyTextareaRef = useRef(null);
+  const lastFocusedInputRef = useRef("body"); // 'subject' | 'body'
 
   useEffect(() => {
     fetchTemplate();
@@ -91,38 +110,42 @@ export default function ReportEmailTemplateManager() {
     }
   };
 
-  const insertPlaceholderToSubject = (tag) => {
-    if (!subjectInputRef.current) {
-      setSubject((prev) => prev + " " + tag);
-      return;
+  const insertPlaceholder = (tag) => {
+    if (lastFocusedInputRef.current === "subject" && subjectInputRef.current) {
+      const input = subjectInputRef.current;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const newText = subject.substring(0, start) + tag + subject.substring(end);
+      setSubject(newText);
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(start + tag.length, start + tag.length);
+      }, 50);
+    } else if (bodyTextareaRef.current) {
+      const textarea = bodyTextareaRef.current;
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const newText = body.substring(0, start) + tag + body.substring(end);
+      setBody(newText);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + tag.length, start + tag.length);
+      }, 50);
+    } else {
+      setBody((prev) => prev + " " + tag);
     }
-    const input = subjectInputRef.current;
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
-    const newText = subject.substring(0, start) + tag + subject.substring(end);
-    setSubject(newText);
-
-    setTimeout(() => {
-      input.focus();
-      input.setSelectionRange(start + tag.length, start + tag.length);
-    }, 50);
+    showToast(`Inserted ${tag} into template`, "info");
   };
 
-  const insertPlaceholderToBody = (tag) => {
-    if (!bodyTextareaRef.current) {
-      setBody((prev) => prev + " " + tag);
-      return;
+  const copyTagToClipboard = async (tag) => {
+    try {
+      await navigator.clipboard.writeText(tag);
+      setCopiedTag(tag);
+      showToast(`Copied ${tag} to clipboard!`, "success");
+      setTimeout(() => setCopiedTag(null), 2000);
+    } catch {
+      showToast("Failed to copy variable", "error");
     }
-    const textarea = bodyTextareaRef.current;
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-    const newText = body.substring(0, start) + tag + body.substring(end);
-    setBody(newText);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + tag.length, start + tag.length);
-    }, 50);
   };
 
   const handleSave = async (e) => {
@@ -183,7 +206,6 @@ export default function ReportEmailTemplateManager() {
       showToast("Email template reset to default!", "success");
     } catch (err) {
       console.error("Failed to reset email template:", err);
-      // Fallback client reset if API fails
       setSubject(DEFAULT_SUBJECT);
       setBody(DEFAULT_BODY);
       showToast("Template reset to default values locally.", "info");
@@ -213,313 +235,507 @@ export default function ReportEmailTemplateManager() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Template Info Bar */}
-      <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      {/* Top Banner: Glass Metadata Bar & Layout Control Bar */}
+      <div className="mac-window rounded-2xl p-4 md:p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#2B7FFF]/10 flex items-center justify-center text-[#2B7FFF]">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/10 border border-blue-500/30 flex items-center justify-center text-[#2B7FFF] shadow-xs">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-zinc-800">Report PDF Email Template</h3>
-              <span className="text-[10px] font-mono font-bold bg-zinc-100 border border-zinc-200 text-zinc-600 px-2 py-0.5 rounded-md">
+              <h3 className="text-sm font-bold text-zinc-900 tracking-tight">
+                Report PDF Delivery Template
+              </h3>
+              <span className="text-[10px] font-mono font-bold bg-blue-500/10 border border-blue-500/25 text-[#2B7FFF] px-2 py-0.5 rounded-full">
                 report_delivery
               </span>
             </div>
             <p className="text-xs text-zinc-500 font-normal mt-0.5">
-              Custom template sent to clients when their Goal Analysis PDF report is dispatched.
+              Automated PDF goal assessment email sent directly to clients.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-zinc-500 font-medium">
-          <div className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 px-3 py-1.5 rounded-xl">
-            <UserCheck className="w-3.5 h-3.5 text-zinc-400" />
-            <span>By: <strong className="text-zinc-700">{templateMetadata.updatedBy}</strong></span>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Metadata Badges */}
+          <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 font-medium">
+            <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-zinc-200/80 px-2.5 py-1 rounded-xl shadow-2xs">
+              <UserCheck className="w-3.5 h-3.5 text-zinc-400" />
+              <span>By: <strong className="text-zinc-700">{templateMetadata.updatedBy}</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-zinc-200/80 px-2.5 py-1 rounded-xl shadow-2xs">
+              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Updated: <strong className="text-zinc-700">{formattedDate}</strong></span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 px-3 py-1.5 rounded-xl">
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Updated: <strong className="text-zinc-700">{formattedDate}</strong></span>
+
+          {/* macOS Segmented Layout Mode Switcher */}
+          <div className="mac-segmented-bg p-1 rounded-xl flex items-center gap-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setViewMode("split")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "split"
+                  ? "bg-white text-[#2B7FFF] shadow-md shadow-black/5"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+              title="Side-by-side Editor & Preview split view"
+            >
+              <Columns className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Split View</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("editor")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "editor"
+                  ? "bg-white text-[#2B7FFF] shadow-md shadow-black/5"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+              title="Full width Composer Editor focus mode"
+            >
+              <FileEdit className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Composer Focus</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("preview")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "preview"
+                  ? "bg-white text-[#2B7FFF] shadow-md shadow-black/5"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+              title="Full width Client Live Email Preview mode"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Live Preview</span>
+            </button>
           </div>
         </div>
       </div>
 
       {apiError && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center gap-3 text-amber-800 text-xs font-medium animate-fade-in">
+        <div className="bg-amber-500/10 border border-amber-500/20 backdrop-blur-md rounded-xl p-3.5 flex items-center gap-3 text-amber-800 text-xs font-medium animate-fade-in">
           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
           <span>{apiError}</span>
         </div>
       )}
 
-      {/* Main Grid: Editor & Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column: Form Editor */}
-        <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#2B7FFF]" />
-              <span className="text-xs font-bold text-zinc-800 uppercase tracking-wider">
-                Template Editor
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowResetModal(true)}
-                disabled={saving || resetting || loading}
-                className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-rose-600 hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                title="Reset template to default"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Default</span>
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="py-12 text-center text-xs font-medium text-zinc-400">
-              Loading template content...
-            </div>
-          ) : (
-            <form onSubmit={handleSave} className="space-y-5">
-              {/* Subject Input Field */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                    Subject Line
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-zinc-400 font-semibold mr-1">Insert tag:</span>
-                    {AVAILABLE_PLACEHOLDERS.map((p) => (
-                      <button
-                        key={p.tag}
-                        type="button"
-                        onClick={() => insertPlaceholderToSubject(p.tag)}
-                        className="text-[10px] font-mono font-bold bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-md transition-colors cursor-pointer"
-                        title={`Insert ${p.tag} into subject`}
-                      >
-                        + {p.tag}
-                      </button>
-                    ))}
-                  </div>
+      {/* Main Grid: Responsive View Layout */}
+      <div
+        className={`grid gap-6 transition-all duration-300 ${
+          viewMode === "split"
+            ? "grid-cols-1 xl:grid-cols-12 items-start"
+            : "grid-cols-1"
+        }`}
+      >
+        {/* Left Column: Form Editor Window */}
+        {(viewMode === "split" || viewMode === "editor") && (
+          <div
+            className={`mac-window rounded-2xl p-5 md:p-6 shadow-2xl space-y-5 transition-all ${
+              viewMode === "split" ? "xl:col-span-7" : "w-full max-w-4xl mx-auto"
+            }`}
+          >
+            {/* macOS Window Title bar with Traffic Lights */}
+            <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Traffic lights */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40" />
+                  <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40" />
+                  <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40" />
                 </div>
-                <input
-                  ref={subjectInputRef}
-                  type="text"
-                  required
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Your Wealth Wisdom Goal Analysis Report is Ready"
-                  className="w-full text-xs font-medium bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white text-zinc-800 transition-all font-sans"
-                />
+                <div className="h-4 w-px bg-zinc-200/80" />
+                <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <FileEdit className="w-3.5 h-3.5 text-[#2B7FFF]" /> Template Composer
+                </span>
               </div>
 
-              {/* Body Content Field */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                    Email Body Content (Plain Text with Placeholders)
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-zinc-400 font-semibold mr-1">Insert tag:</span>
-                    {AVAILABLE_PLACEHOLDERS.map((p) => (
-                      <button
-                        key={p.tag}
-                        type="button"
-                        onClick={() => insertPlaceholderToBody(p.tag)}
-                        className="text-[10px] font-mono font-bold bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-md transition-colors cursor-pointer"
-                        title={`Insert ${p.tag} into body`}
-                      >
-                        + {p.tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <textarea
-                  ref={bodyTextareaRef}
-                  required
-                  rows={10}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Dear {{client_name}}, ..."
-                  className="w-full text-xs font-normal bg-zinc-50 border border-zinc-200 rounded-xl p-3.5 outline-none focus:border-[#2B7FFF] focus:bg-white text-zinc-800 transition-all font-mono leading-relaxed resize-y"
-                />
-              </div>
-
-              {/* Available Placeholders Legend */}
-              <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3.5 space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-700">
-                  <Tag className="w-3.5 h-3.5 text-[#2B7FFF]" />
-                  <span>Available Template Variables</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  {AVAILABLE_PLACEHOLDERS.map((p) => (
-                    <div
-                      key={p.tag}
-                      className="bg-white border border-zinc-200 rounded-lg p-2 flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-bold text-[#2B7FFF]">
-                          {p.tag}
-                        </span>
-                        <span className="text-[9px] font-bold text-zinc-400">{p.label}</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500 font-normal mt-1">{p.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
-                <p className="text-[11px] text-zinc-400 font-medium">
-                  Changes take effect immediately for all future report emails.
-                </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVariablesDrawer((prev) => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    showVariablesDrawer
+                      ? "bg-blue-500/10 text-[#2B7FFF] border border-blue-500/30"
+                      : "text-zinc-500 hover:text-zinc-800 border border-zinc-200/80 hover:bg-white/80"
+                  }`}
+                  title="Toggle available variables legend"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Variables</span>
+                </button>
 
                 <button
-                  type="submit"
-                  disabled={saving || resetting || !subject.trim() || !body.trim()}
-                  className="px-5 py-2.5 bg-[#2B7FFF] hover:bg-[#2B7FFF]/90 disabled:bg-[#2B7FFF]/50 text-white font-bold text-xs rounded-xl cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5 transition-all shadow-md shadow-[#2B7FFF]/10"
+                  type="button"
+                  onClick={() => setShowResetModal(true)}
+                  disabled={saving || resetting || loading}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-rose-600 hover:bg-rose-50 border border-zinc-200/80 hover:border-rose-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                  title="Reset template to default values"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>{saving ? "Saving Changes..." : "Save Template"}</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Reset</span>
                 </button>
               </div>
-            </form>
-          )}
-        </div>
-
-        {/* Right Column: Interactive Live Preview Panel */}
-        <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-xs space-y-4">
-          <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-[#2B7FFF]" />
-              <span className="text-xs font-bold text-zinc-800 uppercase tracking-wider">
-                Live Client Email Preview
-              </span>
-            </div>
-            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-              Real-time Render
-            </span>
-          </div>
-
-          {/* Sample Inputs for Testing Preview */}
-          <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-2">
-            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              <Info className="w-3 h-3 text-zinc-400" />
-              <span>Sample Preview Test Values</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[9px] font-semibold text-zinc-500 mb-0.5">
-                  Client Name:
-                </label>
-                <input
-                  type="text"
-                  value={sampleClientName}
-                  onChange={(e) => setSampleClientName(e.target.value)}
-                  className="w-full text-xs font-medium bg-white border border-zinc-200 rounded-lg px-2.5 py-1 text-zinc-700"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] font-semibold text-zinc-500 mb-0.5">
-                  Attachment Name:
-                </label>
-                <input
-                  type="text"
-                  value={sampleAttachmentName}
-                  onChange={(e) => setSampleAttachmentName(e.target.value)}
-                  className="w-full text-xs font-medium bg-white border border-zinc-200 rounded-lg px-2.5 py-1 text-zinc-700"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Visual Email Preview Frame */}
-          <div className="border border-zinc-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-            {/* Email Header Bar */}
-            <div className="bg-zinc-50 border-b border-zinc-200 p-4 space-y-2 text-xs">
-              <div className="flex items-baseline justify-between border-b border-zinc-200/60 pb-1.5">
-                <span className="font-bold text-zinc-400 uppercase text-[9px] w-14">From:</span>
-                <span className="font-semibold text-zinc-800 flex-1">
-                  Team Wealth Wisdom <span className="text-zinc-400 font-normal">&lt;info@wealthswisdom.com&gt;</span>
-                </span>
-              </div>
-
-              <div className="flex items-baseline justify-between border-b border-zinc-200/60 pb-1.5">
-                <span className="font-bold text-zinc-400 uppercase text-[9px] w-14">To:</span>
-                <span className="font-semibold text-zinc-800 flex-1">
-                  {sampleClientName || "Client"} <span className="text-zinc-400 font-normal">&lt;client@example.com&gt;</span>
-                </span>
-              </div>
-
-              <div className="flex items-baseline justify-between">
-                <span className="font-bold text-zinc-400 uppercase text-[9px] w-14">Subject:</span>
-                <span className="font-bold text-[#2B7FFF] flex-1">
-                  {previewSubject || "(Empty Subject)"}
-                </span>
-              </div>
             </div>
 
-            {/* Email Body Content */}
-            <div className="p-6 bg-white space-y-6">
-              {/* Brand Header */}
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-                <div className="flex items-center gap-2">
-                  <img src="/logo.png" alt="Wealth Wisdom" className="h-7 w-auto object-contain" />
-                  <span className="text-sm font-bold text-zinc-900 tracking-tight">Wealth Wisdom</span>
+            {loading ? (
+              <div className="py-16 text-center text-xs font-medium text-zinc-400 space-y-2">
+                <div className="w-6 h-6 border-2 border-[#2B7FFF] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p>Loading template configuration...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSave} className="space-y-5">
+                {/* Variable Tags Bar */}
+                <div className="bg-white/60 backdrop-blur-md border border-zinc-200/70 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-[#2B7FFF]" /> Quick Variable Tags
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Click to insert into focused field</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    {AVAILABLE_PLACEHOLDERS.map((p) => (
+                      <button
+                        key={p.tag}
+                        type="button"
+                        onClick={() => insertPlaceholder(p.tag)}
+                        className="mac-chip flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-[#2B7FFF] cursor-pointer"
+                        title={`Insert ${p.tag} (${p.label})`}
+                      >
+                        <span className="text-zinc-400 font-sans font-normal text-[11px]">
+                          {p.label}:
+                        </span>
+                        <span>{p.tag}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-[10px] text-zinc-400 font-semibold">Goal Analysis Service</span>
-              </div>
 
-              {/* Rendered Body Text */}
-              <div className="text-xs font-normal text-zinc-700 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
-                {previewBody ? (
-                  previewBody
-                ) : (
-                  <span className="text-zinc-400 italic">No email body copy specified.</span>
+                {/* Expandable Variables Reference Drawer */}
+                {showVariablesDrawer && (
+                  <div className="bg-zinc-900/90 text-white backdrop-blur-xl border border-zinc-700/60 rounded-xl p-4 space-y-3 animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-zinc-700/60 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs font-bold uppercase tracking-wider">
+                          Supported Template Variables
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowVariablesDrawer(false)}
+                        className="text-zinc-400 hover:text-white text-xs cursor-pointer"
+                      >
+                        Close ✕
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {AVAILABLE_PLACEHOLDERS.map((p) => (
+                        <div
+                          key={p.tag}
+                          className="bg-zinc-800/80 border border-zinc-700 rounded-xl p-3 flex flex-col justify-between space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-mono font-bold text-blue-400">
+                              {p.tag}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyTagToClipboard(p.tag)}
+                              className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                            >
+                              {copiedTag === p.tag ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                              <span>{copiedTag === p.tag ? "Copied" : "Copy"}</span>
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 font-normal">{p.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </div>
 
-              {/* Attachment Pill Visual */}
-              <div className="border border-zinc-200 bg-zinc-50 rounded-xl p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-zinc-800 truncate">
-                      {sampleAttachmentName || "Report.pdf"}
-                    </p>
-                    <p className="text-[10px] text-zinc-400 font-medium">PDF Attachment • Secured</p>
-                  </div>
+                {/* Subject Line Input */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">
+                    Email Subject Line
+                  </label>
+                  <input
+                    ref={subjectInputRef}
+                    type="text"
+                    required
+                    value={subject}
+                    onFocus={() => (lastFocusedInputRef.current = "subject")}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="e.g. Your Wealth Wisdom Goal Analysis Report is Ready"
+                    className="glass-input w-full text-xs font-semibold rounded-xl px-4 py-3 outline-none text-zinc-800 transition-all font-sans"
+                  />
                 </div>
-                <span className="text-[10px] font-bold text-zinc-500 bg-white border border-zinc-200 px-2 py-1 rounded-md">
-                  Attached
+
+                {/* Body Content Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                      Email Body Content (Plain Text with Variables)
+                    </label>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      {body.length} chars • {body.split("\n").length} lines
+                    </span>
+                  </div>
+                  <textarea
+                    ref={bodyTextareaRef}
+                    required
+                    rows={12}
+                    value={body}
+                    onFocus={() => (lastFocusedInputRef.current = "body")}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder="Dear {{client_name}}, ..."
+                    className="glass-input w-full text-xs font-normal rounded-xl p-4 outline-none text-zinc-800 transition-all font-mono leading-relaxed resize-y min-h-[260px]"
+                  />
+                </div>
+
+                {/* Submit Action Buttons */}
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-200/50">
+                  <p className="text-[11px] text-zinc-500 font-medium hidden sm:block">
+                    Changes take effect automatically for future report emails.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={saving || resetting || !subject.trim() || !body.trim()}
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#2B7FFF] to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl cursor-pointer disabled:cursor-not-allowed flex items-center gap-2 transition-all shadow-lg shadow-[#2B7FFF]/20"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{saving ? "Saving Changes..." : "Save Template"}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Right Column: Interactive Live Preview Window */}
+        {(viewMode === "split" || viewMode === "preview") && (
+          <div
+            className={`mac-window rounded-2xl p-5 md:p-6 shadow-2xl space-y-4 transition-all ${
+              viewMode === "split" ? "xl:col-span-5" : "w-full max-w-4xl mx-auto"
+            }`}
+          >
+            {/* macOS Window Header & Device Toggle */}
+            <div className="border-b border-zinc-200/50 pb-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/40" />
+                  <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/40" />
+                  <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/40" />
+                </div>
+                <div className="h-4 w-px bg-zinc-200/80" />
+                <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#2B7FFF]" /> Live Client Preview
                 </span>
               </div>
 
-              {/* Email Footer */}
-              <div className="border-t border-zinc-100 pt-4 text-[10px] text-zinc-400 font-medium space-y-1">
-                <p>© {new Date().getFullYear()} Wealth Wisdom. All rights reserved.</p>
-                <p>https://wealthswisdom.com</p>
+              <div className="flex items-center gap-2">
+                {/* Desktop vs Mobile Device Toggle */}
+                <div className="bg-zinc-200/60 p-0.5 rounded-lg flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setDeviceMode("desktop")}
+                    className={`p-1 rounded-md transition-all cursor-pointer ${
+                      deviceMode === "desktop"
+                        ? "bg-white text-[#2B7FFF] shadow-2xs"
+                        : "text-zinc-500 hover:text-zinc-800"
+                    }`}
+                    title="Desktop Email Window Preview"
+                  >
+                    <Monitor className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeviceMode("mobile")}
+                    className={`p-1 rounded-md transition-all cursor-pointer ${
+                      deviceMode === "mobile"
+                        ? "bg-white text-[#2B7FFF] shadow-2xs"
+                        : "text-zinc-500 hover:text-zinc-800"
+                    }`}
+                    title="Mobile iPhone Preview"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSampleControls((prev) => !prev)}
+                  className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                    showSampleControls
+                      ? "bg-blue-500/10 border-blue-500/30 text-[#2B7FFF]"
+                      : "bg-white/80 border-zinc-200/80 text-zinc-500 hover:text-zinc-800"
+                  }`}
+                  title="Toggle Test Sample Values"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible Sample Inputs Panel */}
+            {showSampleControls && (
+              <div className="bg-white/80 backdrop-blur-md border border-zinc-200/80 rounded-xl p-3.5 space-y-2.5 animate-fade-in">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                  <Info className="w-3 h-3 text-[#2B7FFF]" /> Test Variable Inputs
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[9px] font-semibold text-zinc-500 mb-0.5">
+                      Client Name:
+                    </label>
+                    <input
+                      type="text"
+                      value={sampleClientName}
+                      onChange={(e) => setSampleClientName(e.target.value)}
+                      className="glass-input w-full text-xs font-medium rounded-lg px-2.5 py-1 text-zinc-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-semibold text-zinc-500 mb-0.5">
+                      Attachment Name:
+                    </label>
+                    <input
+                      type="text"
+                      value={sampleAttachmentName}
+                      onChange={(e) => setSampleAttachmentName(e.target.value)}
+                      className="glass-input w-full text-xs font-medium rounded-lg px-2.5 py-1 text-zinc-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Visual Preview Device Container */}
+            <div
+              className={`transition-all duration-300 ${
+                deviceMode === "mobile" ? "py-4" : ""
+              }`}
+            >
+              <div
+                className={`overflow-hidden transition-all duration-300 ${
+                  deviceMode === "mobile"
+                    ? "iphone-frame shadow-2xl"
+                    : "border border-zinc-200/80 rounded-2xl bg-white shadow-md"
+                }`}
+              >
+                {/* Mobile iPhone Notch / Status Bar (Only in Mobile Mode) */}
+                {deviceMode === "mobile" && (
+                  <div className="bg-zinc-950 px-5 py-2 text-white flex items-center justify-between text-[11px] font-semibold shrink-0">
+                    <span>9:41</span>
+                    <div className="w-14 h-2.5 bg-zinc-800 rounded-full mx-auto" />
+                    <span className="text-[9px] font-mono">100%</span>
+                  </div>
+                )}
+
+                <div className={deviceMode === "mobile" ? "iphone-screen" : ""}>
+                  {/* macOS Mail Header Pane */}
+                  <div className="bg-zinc-50/90 border-b border-zinc-200/80 p-3 space-y-1 text-xs shrink-0">
+                    <div className="flex items-baseline justify-between border-b border-zinc-200/60 pb-1">
+                      <span className="font-bold text-zinc-400 uppercase text-[9px] w-12">From:</span>
+                      <span className="font-semibold text-zinc-800 flex-1 truncate text-[11px]">
+                        Team Wealth Wisdom <span className="text-zinc-400 font-normal">&lt;info@wealthswisdom.com&gt;</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-baseline justify-between border-b border-zinc-200/60 pb-1">
+                      <span className="font-bold text-zinc-400 uppercase text-[9px] w-12">To:</span>
+                      <span className="font-semibold text-zinc-800 flex-1 truncate text-[11px]">
+                        {sampleClientName || "Client"} <span className="text-zinc-400 font-normal">&lt;client@example.com&gt;</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-baseline justify-between pt-0.5">
+                      <span className="font-bold text-zinc-400 uppercase text-[9px] w-12">Subject:</span>
+                      <span className="font-bold text-[#2B7FFF] flex-1 truncate text-[11px]">
+                        {previewSubject || "(Empty Subject)"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Email Body Pane */}
+                  <div className="p-4 sm:p-5 bg-white space-y-4 flex-1">
+                    {/* Brand Header */}
+                    <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <img src="/logo.png" alt="Wealth Wisdom" className="h-6 w-auto object-contain" />
+                        <span className="text-xs font-extrabold text-zinc-900 tracking-tight">Wealth Wisdom</span>
+                      </div>
+                      <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                        Verified Report
+                      </span>
+                    </div>
+
+                    {/* Rendered Body Text */}
+                    <div className="text-xs font-normal text-zinc-700 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
+                      {previewBody ? (
+                        previewBody
+                      ) : (
+                        <span className="text-zinc-400 italic">No email body copy specified yet...</span>
+                      )}
+                    </div>
+
+                    {/* PDF Attachment Pill Card */}
+                    <div className="border border-zinc-200 bg-gradient-to-r from-zinc-50 to-blue-50/20 rounded-xl p-3 flex items-center justify-between gap-2.5 shadow-2xs hover:border-blue-300 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 border border-rose-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold text-zinc-800 truncate">
+                            {sampleAttachmentName || "Report.pdf"}
+                          </p>
+                          <p className="text-[9px] text-zinc-400 font-medium">PDF Document • 2.4 MB • Encrypted</p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold text-blue-600 bg-white border border-blue-200/80 px-2 py-0.5 rounded-lg shrink-0 shadow-2xs">
+                        Attached
+                      </span>
+                    </div>
+
+                    {/* Email Footer */}
+                    <div className="border-t border-zinc-100 pt-3 text-[10px] text-zinc-400 font-medium space-y-1">
+                      <p>© {new Date().getFullYear()} Wealth Wisdom Platform. All rights reserved.</p>
+                      <p className="text-zinc-400">https://wealthswisdom.com</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* iPhone Bottom Home Indicator Bar */}
+                {deviceMode === "mobile" && (
+                  <div className="bg-zinc-950 py-1 flex justify-center shrink-0">
+                    <div className="w-20 h-1 bg-zinc-600 rounded-full" />
+                  </div>
+                )}
+
+
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Confirmation Modal for Reset */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-zinc-200">
+        <div className="fixed inset-0 z-50 glass-backdrop flex items-center justify-center p-4 animate-fade-in">
+          <div className="mac-window rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-white/80">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 border border-rose-500/20 flex items-center justify-center shrink-0">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-zinc-800">Reset Email Template?</h4>
+                <h4 className="text-sm font-bold text-zinc-900">Reset Email Template?</h4>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Are you sure you want to reset the report delivery template to system defaults?
                   This action will overwrite your custom subject and body.
@@ -527,7 +743,7 @@ export default function ReportEmailTemplateManager() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-zinc-100">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-200/60">
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
@@ -538,7 +754,7 @@ export default function ReportEmailTemplateManager() {
               <button
                 type="button"
                 onClick={handleResetConfirm}
-                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl cursor-pointer transition-colors shadow-xs"
+                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl cursor-pointer transition-colors shadow-md shadow-rose-600/20"
               >
                 Yes, Reset to Default
               </button>
