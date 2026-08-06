@@ -41,8 +41,6 @@ const GOAL_META = {
 const formatINRShort = (val) => {
   const n = parseFloat(val);
   if (!n || isNaN(n)) return null;
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000)   return `₹${(n / 100000).toFixed(1)}L`;
   return `₹${n.toLocaleString("en-IN")}`;
 };
 

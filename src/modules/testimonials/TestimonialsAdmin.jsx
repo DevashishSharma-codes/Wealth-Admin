@@ -188,6 +188,16 @@ export default function TestimonialsAdmin() {
       return;
     }
 
+    if (name.trim().length > 60) {
+      showToast("Client name cannot exceed 60 characters.", "error");
+      return;
+    }
+
+    if (message.trim().length > 300) {
+      showToast("Review message cannot exceed 300 characters.", "error");
+      return;
+    }
+
     const clientName = name.trim();
     const payload = {
       client_name: clientName,
@@ -334,7 +344,13 @@ export default function TestimonialsAdmin() {
               <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
                 Client Name <span className="text-rose-500 font-bold">*</span>
               </label>
-              <span className={`text-[10px] font-mono font-bold ${name.length > 60 ? "text-rose-500" : name.length > 50 ? "text-amber-500" : "text-zinc-400"}`}>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                name.length > 60
+                  ? "bg-rose-100 text-rose-600"
+                  : name.length > 50
+                  ? "bg-amber-100 text-amber-600"
+                  : "bg-zinc-100 text-zinc-500"
+              }`}>
                 {name.length} / 60
               </span>
             </div>
@@ -381,7 +397,13 @@ export default function TestimonialsAdmin() {
               <label className="block text-xs font-bold text-slate-650 tracking-wide select-none">
                 Message <span className="text-rose-500 font-bold">*</span>
               </label>
-              <span className={`text-[10px] font-mono font-bold ${message.length > 300 ? "text-rose-500" : message.length > 250 ? "text-amber-500" : "text-zinc-400"}`}>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                message.length >= 300
+                  ? "bg-rose-100 text-rose-600 font-extrabold"
+                  : message.length > 250
+                  ? "bg-amber-100 text-amber-600"
+                  : "bg-zinc-100 text-zinc-500"
+              }`}>
                 {message.length} / 300
               </span>
             </div>
@@ -392,11 +414,16 @@ export default function TestimonialsAdmin() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write the client testimonial here..."
-              className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white font-medium resize-y min-h-[120px] leading-relaxed transition-all"
+              className={`w-full text-xs bg-zinc-50 border rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2B7FFF] focus:bg-white font-medium resize-y min-h-[120px] leading-relaxed transition-all ${
+                message.length >= 300 ? "border-rose-400 focus:border-rose-500" : "border-zinc-200"
+              }`}
             />
-            <p className="text-[10px] text-zinc-400 font-semibold">
-              Maximum 300 characters allowed.
-            </p>
+            <div className="flex items-center justify-between text-[10px] text-zinc-400 font-semibold">
+              <span>Maximum 300 characters allowed.</span>
+              <span className={message.length >= 300 ? "text-rose-500 font-bold" : ""}>
+                {Math.max(0, 300 - message.length)} remaining
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center justify-between border-t border-zinc-100 pt-5">

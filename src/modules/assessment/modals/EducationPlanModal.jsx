@@ -6,8 +6,6 @@ import { GraduationCap, X, Building, Globe, Calendar, DollarSign, Check, Sparkle
 
 const formatINR = (value) => {
   if (!Number.isFinite(value) || value === 0) return null;
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
-  if (value >= 100000)   return `₹${(value / 100000).toFixed(1)} L`;
   return `₹${value.toLocaleString('en-IN')}`;
 };
 

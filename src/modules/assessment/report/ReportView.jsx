@@ -18,11 +18,12 @@ export function ReportView() {
   if (!calculationResult) return null;
 
   const insRaw = calculationResult.insurance?.total_required?.raw || 0;
-  const displayInsurance = (insRaw / 10000000).toFixed(2);
+  const displayInsurance = insRaw > 0 ? Math.round(insRaw).toLocaleString("en-IN") : "0";
 
   const clientCorpus = calculationResult.client?.corpus?.raw || 0;
   const spouseCorpus = calculationResult.spouse?.corpus?.raw || 0;
-  const displayCorpus = ((clientCorpus + spouseCorpus) / 10000000).toFixed(2);
+  const totalCorpus = clientCorpus + spouseCorpus;
+  const displayCorpus = totalCorpus > 0 ? Math.round(totalCorpus).toLocaleString("en-IN") : "0";
 
   const clientSip = calculationResult.client?.monthly_sip?.raw || 0;
   const spouseSip = calculationResult.spouse?.monthly_sip?.raw || 0;
