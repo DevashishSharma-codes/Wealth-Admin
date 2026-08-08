@@ -1,13 +1,14 @@
 import React, { useState } from "react";
-import { UploadCloud, FileSpreadsheet, Play, X, Loader2 } from "lucide-react";
+import { UploadCloud, FileSpreadsheet, Play, X, Loader2, Download } from "lucide-react";
 import { useToast } from "../../components/UI/Toast";
-import { convertExcelToPdf } from "../../services/assessmentService";
+import { convertExcelToPdf, downloadClientTemplate } from "../../services/assessmentService";
 import { logAction } from "../../utils/activityLogger";
 
 export default function ExcelUpload() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [progress, setProgress] = useState(0);
   const { showToast } = useToast();
 
@@ -50,6 +51,21 @@ export default function ExcelUpload() {
       handleFileUpload(e.target.files[0]);
     }
     e.target.value = ""; // Reset value to allow uploading the same file again
+  };
+
+  const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true);
+    try {
+      showToast("Downloading client assessment template...", "info");
+      await downloadClientTemplate();
+      showToast("Client assessment template downloaded successfully!", "success");
+      logAction("Downloaded client assessment template");
+    } catch (error) {
+      console.error("Failed to download template:", error);
+      showToast("Failed to download template: " + error.message, "error");
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -125,10 +141,26 @@ export default function ExcelUpload() {
     <div className="ww-page">
 
       {/* Page Header */}
-      <div className="ww-page-header">
+      <div className="ww-page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="ww-page-title">Excel Upload</h2>
           <p className="ww-page-subtitle">Bulk import client records to spawn assessments in batches.</p>
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            disabled={downloadingTemplate}
+            className="px-4 py-2.5 bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 rounded-xl text-xs font-bold shadow-xs transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Download client assessment template Excel sheet"
+          >
+            {downloadingTemplate ? (
+              <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
+            ) : (
+              <Download className="w-4 h-4 text-[#2B7FFF]" />
+            )}
+            Download client template
+          </button>
         </div>
       </div>
 
@@ -217,3 +249,4 @@ export default function ExcelUpload() {
     </div>
   );
 }
+

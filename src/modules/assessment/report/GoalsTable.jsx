@@ -1,7 +1,9 @@
 import React from "react";
 
 export function GoalsTable({ calculationResult }) {
-  if (!calculationResult || !calculationResult.goals || !calculationResult.goals.items || calculationResult.goals.items.length === 0) {
+  if (!calculationResult) return null;
+  const goalsObj = calculationResult.goals || calculationResult.data?.goals;
+  if (!goalsObj || !goalsObj.items || goalsObj.items.length === 0) {
     return null;
   }
 
@@ -22,18 +24,18 @@ export function GoalsTable({ calculationResult }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50 font-medium text-zinc-700">
-            {calculationResult.goals.items.map((g, idx) => (
+            {goalsObj.items.map((g, idx) => (
               <tr key={idx} className="hover:bg-zinc-50/30">
                 <td className="py-2.5 px-3 font-semibold text-zinc-800">{g.goal}</td>
                 <td className="py-2.5 px-3 text-center text-zinc-500">{g.target_year}</td>
-                <td className="py-2.5 px-3 text-right text-zinc-500">{g.current_cost.inr}</td>
-                <td className="py-2.5 px-3 text-right text-zinc-500">{g.future_cost.inr}</td>
-                <td className="py-2.5 px-3 text-right text-[#2B7FFF] font-bold">{g.monthly_sip.inr}</td>
+                <td className="py-2.5 px-3 text-right text-zinc-500">{g.current_cost?.inr || g.current_cost}</td>
+                <td className="py-2.5 px-3 text-right text-zinc-500">{g.future_cost?.inr || g.future_cost}</td>
+                <td className="py-2.5 px-3 text-right text-[#2B7FFF] font-bold">{g.monthly_sip?.inr || g.monthly_sip}</td>
               </tr>
             ))}
             <tr className="bg-zinc-50/50 font-bold border-t border-slate-150">
               <td colSpan="4" className="py-3 px-3 text-right text-slate-650 text-[10px]">Total Goals Monthly SIP</td>
-              <td className="py-3 px-3 text-right text-[#2B7FFF] text-xs">{calculationResult.goals.total_monthly_sip.inr}</td>
+              <td className="py-3 px-3 text-right text-[#2B7FFF] text-xs">{goalsObj.total_monthly_sip?.inr || goalsObj.total_monthly_sip}</td>
             </tr>
           </tbody>
         </table>

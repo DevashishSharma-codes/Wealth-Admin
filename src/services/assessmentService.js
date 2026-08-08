@@ -1,4 +1,4 @@
-import api from "../config/api";
+import api, { API_BASE_URL, ADMIN_API_KEY, API_KEY } from "../config/api";
 
 export const createAssessment = () => {
   return api.post("/assessment/");
@@ -68,4 +68,32 @@ export const convertExcelToPdf = (file) => {
     responseType: "blob",
   });
 };
+
+export const downloadClientTemplate = async () => {
+  const adminApiKey = ADMIN_API_KEY || API_KEY;
+  let baseUrl = API_BASE_URL;
+  if (baseUrl.endsWith("/api/v1")) {
+    baseUrl = baseUrl.replace(/\/api\/v1$/, "");
+  }
+  const endpoint = `${baseUrl}/api/v1/admin/upload/import-template`;
+
+  const res = await fetch(endpoint, {
+    headers: { "X-API-Key": adminApiKey },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to download template (Status ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "client-assessment-template.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 

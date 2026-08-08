@@ -25,10 +25,21 @@ export function ReportView() {
   const totalCorpus = clientCorpus + spouseCorpus;
   const displayCorpus = totalCorpus > 0 ? Math.round(totalCorpus).toLocaleString("en-IN") : "0";
 
-  const clientSip = calculationResult.client?.monthly_sip?.raw || 0;
-  const spouseSip = calculationResult.spouse?.monthly_sip?.raw || 0;
-  const goalsSip = calculationResult.goals?.total_monthly_sip?.raw || 0;
-  const displayMonthly = Math.round(clientSip + spouseSip + goalsSip).toLocaleString("en-IN");
+  const invSummary = calculationResult.investment_summary || calculationResult.data?.investment_summary;
+  const totalMonthlyVal = invSummary?.total_monthly_investment || calculationResult.summary?.monthly_investment_required;
+  let displayMonthly = "0";
+  if (totalMonthlyVal) {
+    if (typeof totalMonthlyVal === "object") {
+      displayMonthly = totalMonthlyVal.inr ? totalMonthlyVal.inr.replace(/^₹\s*/, "") : (totalMonthlyVal.display || totalMonthlyVal.raw || "0");
+    } else {
+      displayMonthly = String(totalMonthlyVal).replace(/^₹\s*/, "");
+    }
+  } else {
+    const clientSip = calculationResult.client?.monthly_sip?.raw || 0;
+    const spouseSip = calculationResult.spouse?.monthly_sip?.raw || 0;
+    const goalsSip = calculationResult.goals?.total_monthly_sip?.raw || 0;
+    displayMonthly = Math.round(clientSip + spouseSip + goalsSip).toLocaleString("en-IN");
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
